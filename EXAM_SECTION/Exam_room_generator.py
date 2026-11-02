@@ -58,7 +58,8 @@ last_names = [
     "Menon",
 ]
 
-room_capacity = [30, 40, 50]
+room_columns = [3, 4]
+room_rows = [4,5,6]
 special_room_capacity = [3, 4]
 
 # Step 1: Generate all 625 unique name combinations using itertools.product
@@ -79,14 +80,16 @@ print(f"Generating {no_of_lines} exam room records with unique names...")
 with open(file_path, "w", encoding="utf-8") as f:
   for i in range(1, no_of_lines + 1):
     room_no = f"R-{i:03d}"
-    room_capacity_value = random.choice(room_capacity)
+    room_row = random.choice(room_rows)
+    room_column = random.choice(room_columns)
+    room_capacity_value = room_row * room_column
 
     # Step 2: Cycle through the unique names pool safely using modulo
     invigilator_name = unique_names[(i - 1) % len(unique_names)]
 
     special_room_capacity_value = random.choice(special_room_capacity)
 
-    line = f"{room_no},{room_capacity_value},{invigilator_name},{special_room_capacity_value}\n"
+    line = f"{room_no},{room_capacity_value},{room_row},{room_column},{invigilator_name},{special_room_capacity_value}\n"
     f.write(line)
 
 print(

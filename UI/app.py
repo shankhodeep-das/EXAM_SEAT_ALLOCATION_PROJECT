@@ -128,11 +128,18 @@ class SeatingArrangement(ctk.CTk):
         self.total_rooms_label = ctk.CTkLabel(self.content, text="Total Rooms: 0", font=("Arial", 12))
         self.total_rooms_label.pack(anchor="w", pady=(0, 10))
         
-        # --- CREATE TABLE FOR ROOMS ---
-        # Define columns based on your room data format (Room ID, Capacity, Invigilator, Floor/Block, etc.)
-        columns = ("Room ID", "Capacity", "Invigilator Name", "Special Seats")
-        
-        # Style the Treeview (matches your dark theme)
+        # --- TABLE CONTAINER FRAME ---
+        # We use a frame to neatly grid/pack the table and its scrollbars together
+        table_container = ctk.CTkFrame(self.content, fg_color="transparent")
+        table_container.pack(fill="both", expand=True)
+
+        # Configure grid weight so the table expands properly inside the container
+        table_container.grid_rowconfigure(0, weight=1)
+        table_container.grid_columnconfigure(0, weight=1)
+
+        # --- DEFINE COLUMNS ---
+        columns = ("Room ID", "Capacity", "Rows","Columns","Invigilator Name", "Special Req. Seats Capacity")
+        # --- STYLE THE TREEVIEW ---
         style = ttk.Style()
         style.theme_use("default")
         style.configure("Treeview", 
@@ -148,27 +155,43 @@ class SeatingArrangement(ctk.CTk):
                         relief="flat")
         style.map("Treeview.Heading", background=[('active', '#14375e')])
 
-        # Frame to hold the table and scrollbar
-        table_frame = ctk.CTkFrame(self.content, fg_color="transparent")
-        table_frame.pack(fill="both", expand=True)
+        # --- SCROLLBARS ---
+        # 1. Vertical Scrollbar (Right side)
+        vert_scroll = ctk.CTkScrollbar(table_container, orientation="vertical")
+        
+        # 2. Horizontal Scrollbar (Bottom)
+        horiz_scroll = ctk.CTkScrollbar(table_container, orientation="horizontal")
 
-        # Scrollbar
-        tree_scroll = ctk.CTkScrollbar(table_frame)
-        tree_scroll.pack(side="right", fill="y")
-
-        # Treeview Widget
-        self.room_tree = ttk.Treeview(table_frame, columns=columns, show="headings", yscrollcommand=tree_scroll.set)
-        tree_scroll.configure(command=self.room_tree.yview)
+        # --- TREEVIEW WIDGET ---
+        self.room_tree = ttk.Treeview(
+            table_container, 
+            columns=columns, 
+            show="headings", 
+            yscrollcommand=vert_scroll.set, 
+            xscrollcommand=horiz_scroll.set
+        )
+        
+        # Link scrollbars to table commands
+        vert_scroll.configure(command=self.room_tree.yview)
+        horiz_scroll.configure(command=self.room_tree.xview)
         
         # Configure column headings and widths
         for col in columns:
             self.room_tree.heading(col, text=col)
-            self.room_tree.column(col, width=150, anchor="w")
+            self.room_tree.column(col, width=150, anchor="w", stretch=False) # stretch=False helps trigger horizontal scrolling if needed
 
-        self.room_tree.pack(side="left", fill="both", expand=True)
+        # --- GRID PLACEMENT (Crucial for dual scrollbars) ---
+        # Place table at top-left
+        self.room_tree.grid(row=0, column=0, sticky="nsew")
+        
+        # Place vertical scrollbar to the right of the table
+        vert_scroll.grid(row=0, column=1, sticky="ns")
+        
+        # Place horizontal scrollbar at the bottom of the table
+        horiz_scroll.grid(row=1, column=0, sticky="ew")
 
-        # --- LOAD AND PARSE DATA FROM ROOM .TXT FILE ---
-        file_path = "EXAM_SECTION/Exam_Room_Details.txt"  # Your room data file path
+        # --- LOAD DATA FROM .TXT FILE ---
+        file_path = "EXAM_SECTION/Exam_Room_Details.txt"
         try:
             with open(file_path, "r", encoding="utf-8") as file:
                 lines = file.readlines()
@@ -177,14 +200,10 @@ class SeatingArrangement(ctk.CTk):
             for line in lines:
                 line = line.strip()
                 if line:
-                    # Split the comma-separated line into individual values
                     data_values = line.split(",")
-                    
-                    # Insert row into the table
                     self.room_tree.insert("", "end", values=data_values)
                     count += 1
                     
-            # Update total rooms count label
             self.total_rooms_label.configure(text=f"Total Rooms: {count}")
             
         except FileNotFoundError:
