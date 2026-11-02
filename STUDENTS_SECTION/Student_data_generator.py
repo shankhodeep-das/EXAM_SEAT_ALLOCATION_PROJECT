@@ -153,16 +153,15 @@ print(f"Generating {no_of_lines} student records... Please wait.")
 
 with open(file_path, "w", encoding="utf-8") as f:
   for i in range(len(brainware_courses)):
-    for j in range(random.choice(no_of_sections)):
-        for k in range(no_of_lines):
-            roll_no = f"BWU/{brainware_courses[i]}/25/{k+1:03d}"
-            name = f"{random.choice(first_names)} {random.choice(last_names)}"
-            section = sections[j]
-            sub1, sub2, sub3, sub4 = random.sample(subjects_pool, 4)
+    for k in range(no_of_lines):
+        roll_no = f"BWU/{brainware_courses[i]}/25/{k+1:03d}"
+        name = f"{random.choice(first_names)} {random.choice(last_names)}"
+        section = f"{random.choice(sections)}"
+        sub1, sub2, sub3, sub4 = random.sample(subjects_pool, 4)
 
-            pref_room = random.choice([True, False])
-            req_status = random.choice([True, False])
-            line = f"{roll_no},{name},{section},{sub1},{sub2},{sub3},{sub4},{pref_room},{req_status}\n"
-            f.write(line)
+        pref_room = random.choice([True, False])
+        req_status = random.choice([True, False])
+        line = f"{roll_no},{name},{section},{sub1},{sub2},{sub3},{sub4},{pref_room},{req_status}\n"
+        f.write(line)
 
 print(f"Successfully generated {no_of_lines} records!")
