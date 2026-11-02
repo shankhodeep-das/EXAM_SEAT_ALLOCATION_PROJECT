@@ -83,7 +83,7 @@ subjects_pool = [
 
 brainware_courses= [
     "BTECH(CSE)",
-    "BTECH(CSE_AI/ML)",
+    "BTECH(CSE_AI-ML)",
     "BTECH(CSE_CYBER_SECURITY)",
     "BTECH(CSE_DATA_SCIENCE_AI)",
     "BTECH(CSE_AI_ROBOTICS)",

@@ -4,7 +4,7 @@ import STUDENTS_SECTION.Student_display as STD
 import STUDENTS_SECTION.Student_search as STS
 import EXAM_SECTION.Check_capacity as EXC
 import questionary
-import SEAT_SECTION.Seating_arrangements as SAA 
+import SEAT_SECTION.Seating_arrangements_for_semester as SAA 
 
 def main():
     choice = questionary.select(
