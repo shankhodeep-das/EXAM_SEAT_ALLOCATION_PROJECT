@@ -17,11 +17,13 @@ def find_student_seat(target_student_id):
 
     try:
         with open(Allocated_file_path, 'r', encoding='utf-8') as f:
-            for line in enumerate(f, 1):
+            for line_no, line in enumerate(f, 1):
                 if "Room ID:" in line:
                     current_room = line.strip()
                 if target in line:
                     line_stripped = line.strip()
+                    
+                    
                     parts = line_stripped.split(":", 1)
                     row_name = parts[0].strip() if len(parts) >  1 else "Unknown Row"
                     seats_in_row = [seat.strip() for seat in line_stripped.split() if "[" in seat]
@@ -35,7 +37,7 @@ def find_student_seat(target_student_id):
                     print(f"[✔] Student Found: {target}")
                     print(f"Location Details -> {current_room}")
                     print(f"Row Position     -> {row_name}")
-                    print(f"Column / Seat No -> Column {col_index} (Index {col_index - 1})")
+                    print(f"Column / Seat No -> Column {col_index}")
                     print(f"Full Row Data    -> {line_stripped}")
                     print("=" * 60 + "\n")
                     
@@ -47,5 +49,6 @@ def find_student_seat(target_student_id):
 
     except FileNotFoundError:
         print(f"\n[!] Error: The file '{Allocated_file_path}' could not be found.\n")
+
 if __name__ == "__main__":
     find_student_seat()
