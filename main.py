@@ -4,7 +4,6 @@ import STUDENTS_SECTION.Student_display as STD
 import STUDENTS_SECTION.Student_search as STS
 import EXAM_SECTION.Check_capacity as EXC
 import questionary
-import SEAT_SECTION.Seating_arrangements_for_semester as SAA 
 
 def main():
     choice = questionary.select(
@@ -51,12 +50,7 @@ def main():
                     room_no = input("Enter the Room No (in this Format R-001): ")
                     EXC.check_capacity(room_no)
                 elif n == 7:
-                    print("\nRunning Seat Allocation...")
-                    rooms_result, leftover_spec, leftover_reg = SAA.load_data_and_run()
-                    
-                    if rooms_result:
-                        SAA.save_allocation_results(rooms_result, leftover_spec, leftover_reg)
-                        print("\nAllocation saved successfully to 'Allocated_Seats.txt'!")
+                    pass
                 elif n == 8:
                     STS.Student_Search()
                 elif n == 11:
