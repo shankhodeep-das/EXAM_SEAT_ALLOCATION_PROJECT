@@ -5,10 +5,6 @@ from itertools import permutations
 from collections import defaultdict
 
 
-# ==================================================
-# 1. FILE PATHS
-# ==================================================
-
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 Student_file_path = os.path.join(
@@ -24,10 +20,6 @@ allocation_file_path = os.path.join(
 )
 
 
-# ==================================================
-# 2. USER INPUT
-# ==================================================
-
 max_courses_per_room = int(
     input("Enter maximum courses per room: ")
 )
@@ -35,10 +27,6 @@ max_courses_per_room = int(
 if max_courses_per_room < 1:
     raise ValueError("Number of courses must be at least 1.")
 
-
-# ==================================================
-# 3. STUDENT DATA
-# ==================================================
 
 course_with_students = defaultdict(list)
 
@@ -65,13 +53,7 @@ with open(Student_file_path, "r", encoding="utf-8") as f:
                 f"Invalid student ID: {student_id}"
             )
 
-        # Extract complete course name.
-        # Handles course names containing "/".
-
         course_name = "/".join(ID_Parts[1:-2])
-
-        # First Boolean field = Special seat eligibility
-        # Second Boolean field = Ignored
 
         if len(parts) < 3:
             raise ValueError(
@@ -83,11 +65,6 @@ with open(Student_file_path, "r", encoding="utf-8") as f:
         course_with_students[course_name].append(
             (student_id, special_eligible)
         )
-
-
-# ==================================================
-# 4. ROOM DATA
-# ==================================================
 
 room_details = {}
 
@@ -131,25 +108,14 @@ with open(room_file_path, "r", encoding="utf-8") as f:
             "invigilator": invigilator_name,
             "special_seats": special_seats
         }
-
-
-# ==================================================
-# 5. CREATE SEATING POSITIONS
-# ==================================================
-
 def create_positions(rows, cols, capacity,
                      special_count, number_of_courses):
-
-    # Physical positions in row-major order
 
     physical_positions = [
         (i, j)
         for i in range(rows)
         for j in range(cols)
     ][:capacity]
-
-    # One course: use alternating positions.
-    # Other positions remain empty.
 
     if number_of_courses == 1:
 
@@ -162,9 +128,6 @@ def create_positions(rows, cols, capacity,
         }
 
     else:
-
-        # Dynamic checkerboard pattern
-
         colors = {
             k: [
                 (i, j)
@@ -173,17 +136,10 @@ def create_positions(rows, cols, capacity,
             ]
             for k in range(number_of_courses)
         }
-
-    # All positions are available physical seats
-    # for K >= 2. For K = 1, only checkerboard
-    # positions are valid.
-
     if number_of_courses == 1:
         valid_positions = colors[0]
     else:
         valid_positions = physical_positions
-
-    # Reserve special seats from first row onwards
 
     special_positions = set(
         valid_positions[:special_count]
@@ -195,11 +151,6 @@ def create_positions(rows, cols, capacity,
         )
 
     return valid_positions, special_positions, colors
-
-
-# ==================================================
-# 6. CALCULATE COURSE ALLOCATION CAPACITY
-# ==================================================
 
 def calculate_allocation(
     students,
@@ -221,26 +172,16 @@ def calculate_allocation(
         len(positions) - available_special
     )
 
-    # Eligible students occupy special seats first
-
     special_fill = min(
         eligible_count,
         available_special
     )
-
-    # Remaining students occupy normal seats
-
     normal_fill = min(
         len(students) - special_fill,
         available_normal
     )
 
     return special_fill + normal_fill, special_fill
-
-
-# ==================================================
-# 7. SELECT COURSES FOR EACH ROOM
-# ==================================================
 
 def select_courses(
     remaining_courses,
@@ -259,9 +200,6 @@ def select_courses(
 
     if not available_courses:
         return None
-
-    # Select courses with the largest remaining
-    # student populations
 
     selected_courses = sorted(
         available_courses,
@@ -283,8 +221,6 @@ def select_courses(
 
     best_plan = None
     best_score = (-1, -1)
-
-    # Try different course-to-colour assignments
 
     for course_order in permutations(selected_courses):
 
@@ -324,11 +260,6 @@ def select_courses(
 
     return best_plan
 
-
-# ==================================================
-# 8. PLACE STUDENTS IN THEIR ALLOTTED POSITIONS
-# ==================================================
-
 def place_students(
     students,
     positions,
@@ -340,12 +271,6 @@ def place_students(
     remaining = list(students)
 
     allocated_count = 0
-
-    # ----------------------------------------------
-    # FIRST: Allocate eligible students to
-    # special seats
-    # ----------------------------------------------
-
     for i, j in positions:
 
         if (i, j) not in special_positions:
@@ -373,12 +298,6 @@ def place_students(
             )
 
             allocated_count += 1
-
-    # ----------------------------------------------
-    # SECOND: Allocate remaining students
-    # to normal seats
-    # ----------------------------------------------
-
     for i, j in positions:
 
         if (i, j) in special_positions:
@@ -399,11 +318,6 @@ def place_students(
 
     return remaining, allocated_count
 
-
-# ==================================================
-# 9. COMPLETE ROOM ALLOCATION
-# ==================================================
-
 def allocate_room(plan, details):
 
     rows = details["rows"]
@@ -416,8 +330,6 @@ def allocate_room(plan, details):
 
     allocated_counts = {}
 
-    # Allocate each selected course
-
     for course, positions in plan["course_positions"].items():
 
         remaining, count = place_students(
@@ -428,18 +340,11 @@ def allocate_room(plan, details):
             course
         )
 
-        # Update original course list
-
         course_with_students[course] = remaining
 
         allocated_counts[course] = count
 
     return seats, allocated_counts
-
-
-# ==================================================
-# 10. VALIDATE SEATING ARRANGEMENT
-# ==================================================
 
 def validate_seating(seats):
 
@@ -457,7 +362,6 @@ def validate_seating(seats):
 
             current_course = current[1]
 
-            # Check right-side neighbour
 
             if j + 1 < cols:
 
@@ -469,7 +373,6 @@ def validate_seating(seats):
                 ):
                     return False
 
-            # Check bottom neighbour
 
             if i + 1 < rows:
 
@@ -483,11 +386,6 @@ def validate_seating(seats):
 
     return True
 
-
-# ==================================================
-# 11. GENERATE OUTPUT FILE
-# ==================================================
-
 total_allocated = 0
 rooms_used = 0
 
@@ -495,7 +393,6 @@ with open(allocation_file_path, "w", encoding="utf-8") as f:
 
     for room_no, details in room_details.items():
 
-        # Select courses for the current room
 
         plan = select_courses(
             course_with_students,
@@ -509,14 +406,12 @@ with open(allocation_file_path, "w", encoding="utf-8") as f:
         if plan is None:
             break
 
-        # Allocate students
 
         seats, allocated_counts = allocate_room(
             plan,
             details
         )
 
-        # Validate before generating output
 
         if not validate_seating(seats):
 
@@ -535,10 +430,6 @@ with open(allocation_file_path, "w", encoding="utf-8") as f:
         total_allocated += room_allocated
         rooms_used += 1
 
-        # ------------------------------------------
-        # ROOM HEADING
-        # ------------------------------------------
-
         f.write("=" * 75 + "\n")
 
         f.write(
@@ -554,10 +445,6 @@ with open(allocation_file_path, "w", encoding="utf-8") as f:
             f"Capacity: {details['capacity']} "
             f"(Special Seats: {details['special_seats']})\n\n"
         )
-
-        # ------------------------------------------
-        # SEATING ARRANGEMENT
-        # ------------------------------------------
 
         for i, row in enumerate(seats):
 
@@ -593,10 +480,6 @@ with open(allocation_file_path, "w", encoding="utf-8") as f:
 
             f.write("\n\n")
 
-        # ------------------------------------------
-        # COURSE-WISE REPORT
-        # ------------------------------------------
-
         f.write("COURSE ALLOCATION DETAILS\n")
 
         for course, count in allocated_counts.items():
@@ -611,10 +494,6 @@ with open(allocation_file_path, "w", encoding="utf-8") as f:
 
         f.write("\n" + "=" * 75 + "\n\n")
 
-
-# ==================================================
-# 12. UNALLOCATED STUDENT REPORT
-# ==================================================
 
 unallocated_count = 0
 
@@ -632,10 +511,6 @@ for course, students in course_with_students.items():
 
         unallocated_count += len(students)
 
-
-# ==================================================
-# 13. FINAL SUMMARY
-# ==================================================
 
 print("\n========== FINAL REPORT ==========\n")
 
