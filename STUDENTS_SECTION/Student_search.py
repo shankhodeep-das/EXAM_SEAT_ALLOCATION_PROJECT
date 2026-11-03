@@ -2,7 +2,6 @@ import os
 
 
 def Student_Search():
-    # Prompt for the full roll number format
     target_roll = (
         input("Enter Full Roll Number to search (e.g., BWU/BCA/25/071): ")
         .strip()
@@ -23,8 +22,6 @@ def Student_Search():
     print(f"\nSearching for roll number: {target_roll} (Linear Search)...")
 
     found_line = None
-
-    # Search sequentially through the entire file
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         for line in f:
             line_str = line.strip()
@@ -33,8 +30,6 @@ def Student_Search():
 
             parts = line_str.split(",")
             current_roll = parts[0].strip().upper()
-
-            # Check if the roll number matches the full input string exactly
             if current_roll == target_roll:
                 found_line = line_str
                 break
