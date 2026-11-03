@@ -61,13 +61,10 @@ last_names = [
 room_columns = [3, 4]
 room_rows = [4,5,6]
 special_room_capacity = [3, 4]
-
-# Step 1: Generate all 625 unique name combinations using itertools.product
 unique_names = [
     f"{f} {l}" for f, l in itertools.product(first_names, last_names)
 ]
 
-# Shuffle them so they appear in a random, mixed order
 random.shuffle(unique_names)
 
 script_dir = os.path.dirname(__file__)
@@ -83,8 +80,6 @@ with open(file_path, "w", encoding="utf-8") as f:
     room_row = random.choice(room_rows)
     room_column = random.choice(room_columns)
     room_capacity_value = room_row * room_column
-
-    # Step 2: Cycle through the unique names pool safely using modulo
     invigilator_name = unique_names[(i - 1) % len(unique_names)]
 
     special_room_capacity_value = random.choice(special_room_capacity)
