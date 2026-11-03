@@ -45,21 +45,12 @@ class SeatingArrangement(ctk.CTk):
         info = ctk.CTkLabel(self.content, text="Use the sidebar to navigate through the app.", font=("Arial", 14))
         info.pack(anchor="center", pady=(0, 10))
     def show_students_data(self):
-        self.clear_content()  # Wipe old screen
-        
-        # Title
+        self.clear_content()
         title = ctk.CTkLabel(self.content, text="Student Records", font=("Arial", 18, "bold"))
         title.pack(anchor="w", pady=(0, 5))
-        
-        # Total Students Label
         self.total_label = ctk.CTkLabel(self.content, text="Total Students: 0", font=("Arial", 12))
         self.total_label.pack(anchor="w", pady=(0, 10))
-        
-        # --- CREATE TABLE (TTK TREEVIEW) ---
-        # Define your table columns based on your comma-separated data structure
         columns = ("Roll No", "Name", "Section", "Subject 1", "Subject 2", "Subject 3", "Subject 4", "Preferred Room", "Special Req.")
-        
-        # Style the Treeview to match dark/light mode if desired
         style = ttk.Style()
         style.theme_use("default")
         style.configure("Treeview", 
@@ -74,28 +65,18 @@ class SeatingArrangement(ctk.CTk):
                         foreground="white", 
                         relief="flat")
         style.map("Treeview.Heading", background=[('active', '#14375e')])
-
-        # Create Frame to hold table and scrollbar
         table_frame = ctk.CTkFrame(self.content, fg_color="transparent")
         table_frame.pack(fill="both", expand=True)
-
-        # Scrollbar
         tree_scroll = ctk.CTkScrollbar(table_frame)
         tree_scroll.pack(side="right", fill="y")
-
-        # Treeview Widget
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", yscrollcommand=tree_scroll.set)
         tree_scroll.configure(command=self.tree.yview)
-        
-        # Configure column headings and widths
         for col in columns:
             self.tree.heading(col, text=col)
             self.tree.column(col, width=130, anchor="w")
 
         self.tree.pack(side="left", fill="both", expand=True)
-
-        # --- LOAD AND PARSE DATA FROM .TXT FILE ---
-        file_path = "STUDENTS_SECTION/Students_Data.txt"  # Update path if needed
+        file_path = "STUDENTS_SECTION/Students_Data.txt"
         try:
             with open(file_path, "r", encoding="utf-8") as file:
                 lines = file.readlines()
@@ -104,42 +85,24 @@ class SeatingArrangement(ctk.CTk):
             for line in lines:
                 line = line.strip()
                 if line:
-                    # Split the comma-separated line into individual values
                     data_values = line.split(",")
-                    
-                    # Insert row into the table
-                    # (Ensures it doesn't crash if a line has fewer columns)
                     self.tree.insert("", "end", values=data_values)
                     count += 1
-                    
-            # Update total students count label
             self.total_label.configure(text=f"Total Students: {count}")
             
         except FileNotFoundError:
             self.total_label.configure(text="Total Students: 0 (File not found)")
     def show_rooms_data(self):
-        self.clear_content()  # Wipe old screen
-        
-        # Title
+        self.clear_content()
         title = ctk.CTkLabel(self.content, text="Room Records", font=("Arial", 18, "bold"))
         title.pack(anchor="w", pady=(0, 5))
-        
-        # Total Rooms Label
         self.total_rooms_label = ctk.CTkLabel(self.content, text="Total Rooms: 0", font=("Arial", 12))
         self.total_rooms_label.pack(anchor="w", pady=(0, 10))
-        
-        # --- TABLE CONTAINER FRAME ---
-        # We use a frame to neatly grid/pack the table and its scrollbars together
         table_container = ctk.CTkFrame(self.content, fg_color="transparent")
         table_container.pack(fill="both", expand=True)
-
-        # Configure grid weight so the table expands properly inside the container
         table_container.grid_rowconfigure(0, weight=1)
         table_container.grid_columnconfigure(0, weight=1)
-
-        # --- DEFINE COLUMNS ---
         columns = ("Room ID", "Capacity", "Rows","Columns","Invigilator Name", "Special Req. Seats Capacity")
-        # --- STYLE THE TREEVIEW ---
         style = ttk.Style()
         style.theme_use("default")
         style.configure("Treeview", 
@@ -154,15 +117,8 @@ class SeatingArrangement(ctk.CTk):
                         foreground="white", 
                         relief="flat")
         style.map("Treeview.Heading", background=[('active', '#14375e')])
-
-        # --- SCROLLBARS ---
-        # 1. Vertical Scrollbar (Right side)
         vert_scroll = ctk.CTkScrollbar(table_container, orientation="vertical")
-        
-        # 2. Horizontal Scrollbar (Bottom)
         horiz_scroll = ctk.CTkScrollbar(table_container, orientation="horizontal")
-
-        # --- TREEVIEW WIDGET ---
         self.room_tree = ttk.Treeview(
             table_container, 
             columns=columns, 
@@ -170,27 +126,14 @@ class SeatingArrangement(ctk.CTk):
             yscrollcommand=vert_scroll.set, 
             xscrollcommand=horiz_scroll.set
         )
-        
-        # Link scrollbars to table commands
         vert_scroll.configure(command=self.room_tree.yview)
         horiz_scroll.configure(command=self.room_tree.xview)
-        
-        # Configure column headings and widths
         for col in columns:
             self.room_tree.heading(col, text=col)
-            self.room_tree.column(col, width=150, anchor="w", stretch=False) # stretch=False helps trigger horizontal scrolling if needed
-
-        # --- GRID PLACEMENT (Crucial for dual scrollbars) ---
-        # Place table at top-left
+            self.room_tree.column(col, width=150, anchor="w", stretch=False)
         self.room_tree.grid(row=0, column=0, sticky="nsew")
-        
-        # Place vertical scrollbar to the right of the table
         vert_scroll.grid(row=0, column=1, sticky="ns")
-        
-        # Place horizontal scrollbar at the bottom of the table
         horiz_scroll.grid(row=1, column=0, sticky="ew")
-
-        # --- LOAD DATA FROM .TXT FILE ---
         file_path = "EXAM_SECTION/Exam_Room_Details.txt"
         try:
             with open(file_path, "r", encoding="utf-8") as file:
