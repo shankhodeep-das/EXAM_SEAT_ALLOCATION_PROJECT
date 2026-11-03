@@ -4,11 +4,6 @@ import csv
 from itertools import permutations
 from collections import defaultdict
 
-
-# =========================================================
-# 1. FILE PATHS
-# =========================================================
-
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 Student_file_path = os.path.join(
@@ -23,11 +18,6 @@ allocation_file_path = os.path.join(
     script_dir, "Allocated_Seats_Data_CT.txt"
 )
 
-
-# =========================================================
-# 2. USER INPUT
-# =========================================================
-
 max_sections_per_room = int(
     input("Enter maximum sections per room: ")
 )
@@ -36,12 +26,6 @@ if max_sections_per_room < 1:
     raise ValueError("Number of sections must be at least 1.")
 
 
-# =========================================================
-# 3. STUDENT DATA
-# =========================================================
-
-# Structure:
-# Course -> Section -> [(Student ID, Special Eligibility)]
 
 course_with_sections = defaultdict(
     lambda: defaultdict(list)
@@ -71,8 +55,6 @@ with open(Student_file_path, "r", encoding="utf-8") as f:
                 f"Invalid student record: {student_id}"
             )
 
-        # Extract course name from student ID.
-        # Example: BWU/BTECH(CSE)/25/001
 
         ID_Parts = student_id.split("/")
 
@@ -83,12 +65,9 @@ with open(Student_file_path, "r", encoding="utf-8") as f:
 
         course_name = "/".join(ID_Parts[1:-2])
 
-        # Section is stored in the third CSV column.
 
         section = parts[2].strip()
 
-        # First Boolean field = Special eligibility.
-        # Second Boolean field is ignored.
 
         special_eligible = parse_bool(parts[-2])
 
@@ -100,11 +79,6 @@ with open(Student_file_path, "r", encoding="utf-8") as f:
         course_with_sections[course_name][section].append(
             (student_id, special_eligible)
         )
-
-
-# =========================================================
-# 4. ROOM DATA
-# =========================================================
 
 room_details = {}
 
@@ -150,10 +124,6 @@ with open(room_file_path, "r", encoding="utf-8") as f:
         }
 
 
-# =========================================================
-# 5. CREATE DYNAMIC SECTION POSITIONS
-# =========================================================
-
 def create_section_positions(
     rows,
     cols,
@@ -162,16 +132,12 @@ def create_section_positions(
     number_of_sections
 ):
 
-    # Create physical room positions in row-major order.
 
     physical_positions = [
         (i, j)
         for i in range(rows)
         for j in range(cols)
     ][:capacity]
-
-    # If only one section is selected,
-    # leave alternate positions empty.
 
     if number_of_sections == 1:
 
@@ -187,8 +153,6 @@ def create_section_positions(
 
     else:
 
-        # Dynamic grid colouring.
-
         colors = {
             k: [
                 (i, j)
@@ -200,9 +164,6 @@ def create_section_positions(
 
         valid_positions = physical_positions
 
-    # Special positions start from Row 1.
-    # If Row 1 is insufficient, continue into Row 2,
-    # then Row 3, and so on.
 
     special_positions = set(
         valid_positions[:special_count]
@@ -215,11 +176,6 @@ def create_section_positions(
         )
 
     return colors, special_positions
-
-
-# =========================================================
-# 6. CALCULATE SECTION ALLOCATION CAPACITY
-# =========================================================
 
 def calculate_section_capacity(
     students,
@@ -243,14 +199,12 @@ def calculate_section_capacity(
         len(positions) - available_special
     )
 
-    # Eligible students occupy special seats.
 
     special_allocated = min(
         eligible_count,
         available_special
     )
 
-    # Remaining students occupy normal seats.
 
     normal_allocated = min(
         len(students) - special_allocated,
@@ -262,11 +216,6 @@ def calculate_section_capacity(
     )
 
     return total_allocated, special_allocated
-
-
-# =========================================================
-# 7. SELECT ONE COURSE AND MULTIPLE SECTIONS
-# =========================================================
 
 def select_course_and_sections(
     remaining_data,
@@ -280,8 +229,6 @@ def select_course_and_sections(
     best_plan = None
     best_score = (-1, -1)
 
-    # Check every available course.
-
     for course, sections in remaining_data.items():
 
         available_sections = [
@@ -293,8 +240,6 @@ def select_course_and_sections(
         if not available_sections:
             continue
 
-        # Limit sections according to:
-        # User input, available sections and room geometry.
 
         max_possible_sections = min(
             max_sections,
@@ -305,8 +250,6 @@ def select_course_and_sections(
 
         if max_possible_sections < 1:
             continue
-
-        # Select sections having the largest populations.
 
         selected_sections = sorted(
             available_sections,
@@ -323,8 +266,6 @@ def select_course_and_sections(
             special_count,
             K
         )
-
-        # Test different section-to-position assignments.
 
         for section_order in permutations(selected_sections):
 
@@ -368,10 +309,6 @@ def select_course_and_sections(
     return best_plan
 
 
-# =========================================================
-# 8. ALLOCATE STUDENTS TO SPECIAL AND NORMAL SEATS
-# =========================================================
-
 def allocate_section_students(
     students,
     positions,
@@ -385,16 +322,11 @@ def allocate_section_students(
 
     allocated_count = 0
 
-    # -----------------------------------------------------
-    # FIRST: Allocate eligible students to special seats.
-    # -----------------------------------------------------
 
     for i, j in positions:
 
         if (i, j) not in special_positions:
             continue
-
-        # Find an eligible student.
 
         student_index = next(
             (
@@ -420,10 +352,6 @@ def allocate_section_students(
 
             allocated_count += 1
 
-    # -----------------------------------------------------
-    # SECOND: Allocate remaining students to normal seats.
-    # -----------------------------------------------------
-
     for i, j in positions:
 
         if (i, j) in special_positions:
@@ -446,16 +374,10 @@ def allocate_section_students(
     return remaining, allocated_count
 
 
-# =========================================================
-# 9. COMPLETE ROOM ALLOCATION
-# =========================================================
-
 def allocate_section_room(plan, details):
 
     rows = details["rows"]
     cols = details["cols"]
-
-    # Create empty seating matrix.
 
     seats = [
         ["EMPTY" for _ in range(cols)]
@@ -466,7 +388,6 @@ def allocate_section_room(plan, details):
 
     course = plan["course"]
 
-    # Allocate every selected section.
 
     for section, positions in plan["section_positions"].items():
 
@@ -479,7 +400,6 @@ def allocate_section_room(plan, details):
             section
         )
 
-        # Update remaining students.
 
         course_with_sections[course][section] = remaining
 
@@ -487,10 +407,6 @@ def allocate_section_room(plan, details):
 
     return seats, allocation_report
 
-
-# =========================================================
-# 10. VALIDATE SEATING ARRANGEMENT
-# =========================================================
 
 def validate_section_seating(seats):
 
@@ -508,7 +424,6 @@ def validate_section_seating(seats):
 
             current_section = current[2]
 
-            # Check right neighbour.
 
             if j + 1 < cols:
 
@@ -519,8 +434,6 @@ def validate_section_seating(seats):
                     and neighbour[2] == current_section
                 ):
                     return False
-
-            # Check bottom neighbour.
 
             if i + 1 < rows:
 
@@ -534,19 +447,12 @@ def validate_section_seating(seats):
 
     return True
 
-
-# =========================================================
-# 11. GENERATE OUTPUT FILE
-# =========================================================
-
 total_allocated = 0
 rooms_used = 0
 
 with open(allocation_file_path, "w", encoding="utf-8") as f:
 
     for room_no, details in room_details.items():
-
-        # Select one course and its sections.
 
         plan = select_course_and_sections(
             course_with_sections,
@@ -557,19 +463,13 @@ with open(allocation_file_path, "w", encoding="utf-8") as f:
             max_sections_per_room
         )
 
-        # No remaining students.
-
         if plan is None:
             break
-
-        # Allocate students.
 
         seats, allocation_report = allocate_section_room(
             plan,
             details
         )
-
-        # Validate before writing output.
 
         if not validate_section_seating(seats):
 
@@ -589,11 +489,6 @@ with open(allocation_file_path, "w", encoding="utf-8") as f:
 
         total_allocated += room_allocated
         rooms_used += 1
-
-        # -------------------------------------------------
-        # ROOM HEADING
-        # -------------------------------------------------
-
         f.write("=" * 75 + "\n")
 
         f.write("EXAM SEATING PLAN\n")
@@ -608,11 +503,6 @@ with open(allocation_file_path, "w", encoding="utf-8") as f:
             f"Capacity: {details['capacity']} | "
             f"Special Seats: {details['special_seats']}\n\n"
         )
-
-        # -------------------------------------------------
-        # PRINT SEATING ARRANGEMENT
-        # -------------------------------------------------
-
         for i, row in enumerate(seats):
 
             f.write(f"ROW {i + 1}: ")
@@ -646,11 +536,6 @@ with open(allocation_file_path, "w", encoding="utf-8") as f:
                         )
 
             f.write("\n\n")
-
-        # -------------------------------------------------
-        # SECTION-WISE ALLOCATION REPORT
-        # -------------------------------------------------
-
         f.write("SECTION-WISE ALLOCATION DETAILS\n")
 
         for section, count in allocation_report.items():
@@ -666,11 +551,6 @@ with open(allocation_file_path, "w", encoding="utf-8") as f:
 
         f.write("\n" + "=" * 75 + "\n\n")
 
-
-# =========================================================
-# 12. DETAILED UNALLOCATED STUDENT REPORT
-# =========================================================
-
 total_students = sum(
     len(students)
     for sections in course_with_sections.values()
@@ -678,8 +558,6 @@ total_students = sum(
 ) + total_allocated
 
 unallocated_count = 0
-
-# Calculate total physical room capacity.
 total_room_capacity = sum(
     details["capacity"]
     for details in room_details.values()
@@ -702,33 +580,21 @@ for course, sections in course_with_sections.items():
 
 unallocated_count = len(remaining_students)
 
-
-# =========================================================
-# 13. IDENTIFY LIKELY REASONS
-# =========================================================
-
 reason_counts = defaultdict(int)
 
 def identify_reason(student):
 
     course = student["course"]
     section = student["section"]
-
-    # Reason 1: Physical capacity has been exhausted.
     if total_allocated >= total_room_capacity:
 
         return "Physical room capacity exhausted"
-
-    # Reason 2: All rooms have been used, but students remain.
     if rooms_used >= len(room_details):
 
         return (
             "No rooms remain under the one-course-per-room "
             "allocation rule"
         )
-
-    # Reason 3: Too many sections may prevent a section
-    # from being accommodated under the room's section limit.
     available_sections = [
         sec
         for sec, students in course_with_sections[course].items()
@@ -741,9 +607,6 @@ def identify_reason(student):
             "Section grouping limit: maximum sections "
             "per room is restricted"
         )
-
-    # Reason 4: Remaining seats may be unusable because
-    # of the no-adjacent-same-section seating pattern.
     return (
         "Seating pattern or allocation selection restriction"
     )
@@ -756,11 +619,6 @@ for student in remaining_students:
     student["reason"] = reason
 
     reason_counts[reason] += 1
-
-
-# =========================================================
-# 14. WRITE DETAILED REPORT TO OUTPUT FILE
-# =========================================================
 
 with open(
     allocation_file_path,
@@ -803,11 +661,6 @@ with open(
             )
 
             f.write("-" * 75 + "\n")
-
-    # -----------------------------------------------------
-    # SUMMARY
-    # -----------------------------------------------------
-
     f.write("\n")
     f.write("=" * 75 + "\n")
     f.write("                 FINAL ALLOCATION SUMMARY\n")
@@ -829,12 +682,6 @@ with open(
 
     f.write("\n")
     f.write("=" * 75 + "\n")
-
-
-# =========================================================
-# 15. FINAL CONSOLE REPORT
-# =========================================================
-
 print("\n========== FINAL REPORT ==========\n")
 
 print("Maximum Sections Per Room:", max_sections_per_room)
