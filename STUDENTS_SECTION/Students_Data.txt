@@ -1268,7 +1268,7 @@ BWU/BCA/25/067,Dev Ghosh,H,Math,English,Cyber Security,Operating Systems,True,Fa
 BWU/BCA/25/068,Kabir Verma,G,English,Python,Cyber Security,Cloud Computing,False,True
 BWU/BCA/25/069,Riya Paul,E,C++,Database,Web Dev,Physics,True,False
 BWU/BCA/25/070,Abhishek Bose,A,Data Structures,C++,Python,Math,False,False
-BWU/BCA/25/071,Priya Sen,G,Networks,Chemistry,Biology,Physics,False,False
+BWU/BCA/25/071,Shankhodeep Das,C,Networks,Chemistry,Biology,Physics,False,False
 BWU/BCA/25/072,Tanvi Dey,F,Cyber Security,Database,Physics,Python,False,True
 BWU/BCA/25/073,Aditya Verma,A,Database,Cloud Computing,Chemistry,Biology,False,True
 BWU/BCA/25/074,Aarav Verma,H,Cloud Computing,Biology,Data Structures,Computer,True,True
