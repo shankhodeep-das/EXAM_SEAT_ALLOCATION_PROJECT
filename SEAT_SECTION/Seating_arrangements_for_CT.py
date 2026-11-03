@@ -20,7 +20,7 @@ room_file_path = os.path.join(
 )
 
 allocation_file_path = os.path.join(
-    script_dir, "Allocated_Seats.txt"
+    script_dir, "Allocated_Seats_Data_CT.txt"
 )
 
 
