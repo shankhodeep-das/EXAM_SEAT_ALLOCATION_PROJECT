@@ -14,13 +14,10 @@ def view_single_room(room_no):
     try:
         with open(Allocated_file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-            
-        # Split the file content by the block header
         blocks = content.split("EXAM SEATING PLAN")
         
         found = False
         for block in blocks:
-            # Clean up whitespace and check if the target room ID exists in this block
             if f"Room ID: {room_no.upper()}" in block:
                 print("\n" + "=" * 60)
                 print("EXAM SEATING PLAN" + block.strip())
@@ -33,7 +30,5 @@ def view_single_room(room_no):
             
     except FileNotFoundError:
         print(f"\n[!] Error: The file '{Allocated_file_path}' could not be found.\n")
-
-# --- Example Usage ---
 if __name__ == "__main__":
     file_name = "Allocated_Seats_Data_Sem.txt"
