@@ -33,6 +33,12 @@ export default function Navbar() {
           <a href="/download" className="btn btn-outline">
             Download app
           </a>
+          <a href="/signup" className="btn btn-primary">
+            Sign up
+          </a>
+          <a href="/login" className="btn btn-primary">
+            Log in
+          </a>
         </div>
       </div>
     </header>
