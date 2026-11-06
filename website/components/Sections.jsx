@@ -176,14 +176,14 @@ export function Download() {
               for Android and iOS.
             </p>
             <div className="store-row">
-              <a href={siteConfig.androidUrl} className="store">
+              <a href="/download" className="store">
                 <DownloadIcon size={20} />
                 <span>
                   <small>Download for</small>
                   Android
                 </span>
               </a>
-              <a href={siteConfig.iosUrl} className="store">
+              <a href="/download" className="store">
                 <DownloadIcon size={20} />
                 <span>
                   <small>Download for</small>
