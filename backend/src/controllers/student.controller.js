@@ -1,28 +1,27 @@
-const getStudents = (req, res) => {
+const prisma = require("../config/prisma");
 
-    const students = [
-        {
-            id: 1,
-            name: "Rahul",
-            course: "BCA"
-        },
-        {
-            id: 2,
-            name: "Amit",
-            course: "BTech"
-        },
-        {
-            id: 3,
-            name: "Priya",
-            course: "BCA"
-        }
-    ];
-
-    res.status(200).json({
-        success: true,
-        students: students
+const getStudents = async (req, res) => {
+  try {
+    const students = await prisma.student.findMany({
+      orderBy: {
+        id: "asc",
+      },
     });
 
+    res.status(200).json({
+      success: true,
+      count: students.length,
+      students,
+    });
+
+  } catch (error) {
+    console.error("Error fetching students:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch students",
+    });
+  }
 };
 
 module.exports = { getStudents };
