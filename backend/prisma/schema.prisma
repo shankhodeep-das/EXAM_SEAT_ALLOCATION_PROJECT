@@ -1,12 +1,143 @@
+
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "postgresql"
 }
 
+enum CourseLevel {
+  DIPLOMA
+  UG
+  PG
+  PHD
+}
+
+enum PaperType {
+  THEORY
+  LAB
+  PRACTICAL
+  PROJECT
+  VIVA
+  OTHER
+}
+
+enum StaffType {
+  FACULTY
+  OFFICIAL
+}
+
+enum RoleGroup {
+  STUDENT
+  STAFF
+  ADMIN
+}
+
+model Course {
+  id             Int        @id @default(autoincrement())
+  courseName     String     @unique
+  courseCode     String?    @unique
+  courseLevel    CourseLevel
+  durationYears  Float?
+  totalSemesters Int?
+
+  students       Student[]
+  subjects       SemesterSubject[]
+
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
 model Student {
-  id     Int    @id @default(autoincrement())
-  name   String
-  course String
+  rollNo         String   @id
+  password       String
+  fullName       String
+  section        String
+  semester       Int
+
+  specialReq     Boolean  @default(false)
+  specialSeatReq Boolean  @default(false)
+
+  courseId       Int
+  course         Course   @relation(fields: [courseId], references: [id])
+
+  user           User?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([courseId, semester, section])
+}
+
+model Faculty {
+  id          Int       @id @default(autoincrement())
+  employeeId  String    @unique
+  fullName    String
+  phone       String?
+  department  String
+  designation String
+  staffType   StaffType
+  joiningDate DateTime?
+  isActive    Boolean   @default(true)
+
+  user        User?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([department, staffType])
+}
+
+model Role {
+  id          Int       @id @default(autoincrement())
+  roleName    String    @unique
+  roleGroup   RoleGroup
+  description String?
+  permissions String[]  @default([])
+
+  users       User[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model User {
+  id             Int       @id @default(autoincrement())
+  email          String    @unique
+  passwordHash   String
+
+  roleId         Int
+  role           Role      @relation(fields: [roleId], references: [id])
+
+  studentRollNo  String?   @unique
+  student        Student?  @relation(fields: [studentRollNo], references: [rollNo])
+
+  facultyId      Int?      @unique
+  faculty        Faculty?  @relation(fields: [facultyId], references: [id])
+
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([roleId])
+}
+
+model SemesterSubject {
+  id          Int       @id @default(autoincrement())
+  courseId    Int
+  semester    Int
+  subjectCode String?
+  subjectName String
+  paperType   PaperType
+
+  course      Course    @relation(fields: [courseId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([courseId, semester, subjectName, paperType])
+  @@index([courseId, semester])
 }
