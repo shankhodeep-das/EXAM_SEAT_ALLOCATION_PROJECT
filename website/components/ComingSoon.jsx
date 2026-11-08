@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Navbar from "@/components/Navbar";
+import { useRouter } from "next/navigation";
 import "@/app/globals.css";
 
 export default function ComingSoon({
@@ -11,6 +12,7 @@ export default function ComingSoon({
   fileUrl = null,
   fileLabel = "Download Attached File"
 }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [activeTab, setActiveTab] = useState("matrix");
@@ -26,6 +28,39 @@ export default function ComingSoon({
   return (
     <div className="cs-container">
       <Navbar />
+      <div style={{ padding: "12px 5% 0" }}>
+        <button
+          onClick={() => router.back()}
+          type="button"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "7px",
+            padding: "8px 15px",
+            borderRadius: "8px",
+            border: "1px solid #e2e8f0",
+            background: "#ffffff",
+            color: "#334155",
+            fontSize: "13px",
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "all 0.2s ease"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#eff6ff";
+            e.currentTarget.style.borderColor = "#bfdbfe";
+            e.currentTarget.style.color = "#2563eb";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "#ffffff";
+            e.currentTarget.style.borderColor = "#e2e8f0";
+            e.currentTarget.style.color = "#334155";
+          }}
+        >
+          ← Back
+        </button>
+      </div>
+
 
       <div className="cs-dot-bg" />
 

@@ -24,6 +24,7 @@ function generateToken(user) {
 
 // STUDENT LOGIN
 
+
 exports.studentLogin = async (req, res) => {
   try {
     const { rollNo, email, password } = req.body;
@@ -33,34 +34,25 @@ exports.studentLogin = async (req, res) => {
         message: "Roll number, email and password are required",
       });
     }
-    
-    console.log("User fetched for login:", rollNo, email, password);
-    const user = await prisma.user.findUnique({
+
+    // STEP 1: Find student in Student table
+    const student = await prisma.student.findUnique({
       where: {
-        studentRollNo: rollNo.trim(),
-      },
-      include: {
-        role: true,
-        student: true,
+        rollNo: rollNo.trim(),
       },
     });
+    console.log("Student found:", student);
 
-    if (
-      !user ||
-      !user.student ||
-      user.role.roleGroup !== "STUDENT" ||
-      user.email.toLowerCase() !== email.trim().toLowerCase() ||
-      !user.isActive
-    ) {
+    if (!student) {
       return res.status(401).json({
         message: "Invalid login credentials",
       });
     }
 
-    // Compare entered password with Student table's password hash
+    // STEP 2: Verify password against Student.password
     const passwordMatch = await bcrypt.compare(
       password,
-      user.student.password
+      student.password
     );
 
     if (!passwordMatch) {
@@ -69,21 +61,48 @@ exports.studentLogin = async (req, res) => {
       });
     }
 
+    // STEP 3: Find linked User account using student roll number
+    const user = await prisma.user.findUnique({
+      where: {
+        studentRollNo: student.rollNo,
+      },
+      include: {
+        role: true,
+      },
+    });
+
+    if (
+      !user ||
+      !user.isActive ||
+      user.email.toLowerCase() !== email.trim().toLowerCase() ||
+      user.role.roleGroup !== "STUDENT"
+    ) {
+      return res.status(401).json({
+        message: "Invalid login credentials",
+      });
+    }
+
+    // STEP 4: Generate JWT
     const token = generateToken(user);
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastLoginAt: new Date() },
+      data: {
+        lastLoginAt: new Date(),
+      },
     });
 
+    // STEP 5: Return student information
     return res.status(200).json({
       message: "Student login successful",
       token,
       user: {
         id: user.id,
         email: user.email,
-        rollNo: user.student.rollNo,
-        fullName: user.student.fullName,
+        rollNo: student.rollNo,
+        fullName: student.fullName,
+        section: student.section,
+        semester: student.semester,
         role: user.role.roleName,
         roleGroup: user.role.roleGroup,
       },
@@ -97,6 +116,7 @@ exports.studentLogin = async (req, res) => {
     });
   }
 };
+
 
 
 // FACULTY / OFFICIAL / ADMIN LOGIN

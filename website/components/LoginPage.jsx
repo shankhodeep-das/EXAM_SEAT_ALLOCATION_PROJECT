@@ -36,7 +36,7 @@ export default function LoginPage() {
                 }),
             });
             } else {
-            result = await apiRequest("/api/auth/staff/login", {
+            result = await apiRequest("/api/staff/login", {
                 method: "POST",
                 body: JSON.stringify({
                 email,
@@ -55,10 +55,8 @@ export default function LoginPage() {
             // Redirect according to account type
             if (result.user.roleGroup === "STUDENT") {
             router.push("/student/dashboard");
-            } else if (result.user.roleGroup === "ADMIN") {
-            router.push("/admin/dashboard");
-            } else if (result.user.roleGroup === "STAFF") {
-            router.push("/faculty/dashboard");
+            }else if (result.user.roleGroup === "STAFF") {
+            router.push("/staff/dashboard");
             }
 
         } catch (err) {

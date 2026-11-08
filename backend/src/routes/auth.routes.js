@@ -16,10 +16,7 @@ const {
 } = require("../controllers/auth.controller");
 
 
-// GET all students
-router.get("/", getStudents);
-router.post("/login", studentLogin);
-// POST a new student
-router.post("/", authenticate, authorizeAdmin, createStudent);
+router.post("/students/login", studentLogin);
+router.post("/staff/login", staffLogin);
 
 module.exports = router;
