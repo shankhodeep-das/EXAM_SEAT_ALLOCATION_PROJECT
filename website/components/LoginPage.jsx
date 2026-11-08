@@ -16,10 +16,10 @@ export default function LoginPage() {
     const [studentCode, setStudentCode] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const { user, loadings } = useAuth();
+    const { user, authLoading } = useAuth();
 
     useEffect(() => {
-      if (!loadings && user) {
+      if (!authLoading && user) {
         if (user.roleGroup === "STUDENT") {
           router.replace("/student/dashboard");
         }else if (user.roleGroup === "STAFF") {
@@ -55,8 +55,8 @@ export default function LoginPage() {
             });
             }
 
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("user", JSON.stringify(data.user));
+            localStorage.setItem("token", result.token);
+            localStorage.setItem("user", JSON.stringify(result.user));
 
             // Clear password from the form
             setPassword("");
@@ -74,8 +74,13 @@ export default function LoginPage() {
             setLoading(false);
         }
     };
-
-  if (loadings){
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Checking your session...
+      </div>
+    );
+  }
     return (
       <div className="cs-container">
         <Navbar />
@@ -194,5 +199,4 @@ export default function LoginPage() {
         </div>
       </div>
     );
-  }
   }
