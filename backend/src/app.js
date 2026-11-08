@@ -5,7 +5,7 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://your-frontend-name.vercel.app"
+  "https://esap-one.vercel.app/"
 ];
 
 app.use(cors({
