@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import InteractiveLoader from "@/components/InteractiveLoader";
 
 export default function LoginPage() {
   // Toggle state: 'student' or 'faculty'
@@ -17,7 +18,6 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const { user, authLoading } = useAuth();
-    const { setUser } = useAuth();
 
     useEffect(() => {
       if (!authLoading && user) {
@@ -75,12 +75,8 @@ export default function LoginPage() {
             setLoading(false);
         }
     };
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Checking your session...
-      </div>
-    );
+  if (authLoading || loading) {
+    return <InteractiveLoader />;
   }
     return (
       <div className="cs-container">

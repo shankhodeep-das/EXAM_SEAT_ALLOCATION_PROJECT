@@ -14,7 +14,7 @@ export async function verifyToken() {
         Authorization: `Bearer ${token}`,
       },
     });
-
+    console.log(response)
     if (!response.ok) {
       throw new Error(`Authentication API returned ${response.status}`);
     }
