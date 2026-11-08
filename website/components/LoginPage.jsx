@@ -17,6 +17,7 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const { user, authLoading } = useAuth();
+    const { setUser } = useAuth();
 
     useEffect(() => {
       if (!authLoading && user) {
@@ -35,7 +36,7 @@ export default function LoginPage() {
 
         try {
             let result;
-            console.log(role, studentCode, email, password);
+            console.log(role, studentCode, email);
             if (role === "student") {
             result = await apiRequest("/api/students/login", {
                 method: "POST",
@@ -84,7 +85,6 @@ export default function LoginPage() {
     return (
       <div className="cs-container">
         <Navbar />
-
         {/* Matching Background Pattern */}
         <div className="cs-dot-bg" />
 

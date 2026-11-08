@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
 import "@/app/globals.css";
+import { LogOut } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ComingSoon({
   title = "This module is under development",
@@ -16,6 +18,7 @@ export default function ComingSoon({
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [activeTab, setActiveTab] = useState("matrix");
+  const { setUser } = useAuth();
 
   const handleSubscribe = (e) => {
     e.preventDefault();
@@ -24,11 +27,27 @@ export default function ComingSoon({
       setEmail("");
     }
   };
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    setUser(null);
+
+    router.replace("/");
+  };
 
   return (
     <div className="cs-container">
       <Navbar />
-      <div style={{ padding: "12px 5% 0" }}>
+      <div
+        style={{
+          padding: "12px 5% 0",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        {/* Back Button */}
         <button
           onClick={() => router.back()}
           type="button"
@@ -44,20 +63,38 @@ export default function ComingSoon({
             fontSize: "13px",
             fontWeight: 600,
             cursor: "pointer",
-            transition: "all 0.2s ease"
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#eff6ff";
-            e.currentTarget.style.borderColor = "#bfdbfe";
-            e.currentTarget.style.color = "#2563eb";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#ffffff";
-            e.currentTarget.style.borderColor = "#e2e8f0";
-            e.currentTarget.style.color = "#334155";
           }}
         >
           ← Back
+        </button>
+
+        {/* Logout Button */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "8px 15px",
+            borderRadius: "8px",
+            border: "1px solid #fecaca",
+            background: "#fff",
+            color: "#dc2626",
+            fontSize: "13px",
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#fef2f2";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "#fff";
+          }}
+        >
+          <LogOut size={16} />
+          Logout
         </button>
       </div>
 
@@ -191,11 +228,9 @@ export default function ComingSoon({
             )}
           </div>
         </div>
-
         <div className="cs-footer">
           © 2026 SeatWise. Streamlined examination management.
         </div>
-
       </div>
     </div>
   );

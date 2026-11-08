@@ -20,5 +20,6 @@ const authRoutes = require("./routes/auth.routes");
 
 app.use("/api", authRoutes);
 app.use("/api", authRoutes);
+app.use("/api/auth", authRoutes);
 
 module.exports = app;

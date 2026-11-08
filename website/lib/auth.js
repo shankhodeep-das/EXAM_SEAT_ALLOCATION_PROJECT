@@ -16,9 +16,7 @@ export async function verifyToken() {
     });
 
     if (!response.ok) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      return null;
+      throw new Error(`Authentication API returned ${response.status}`);
     }
 
     const data = await response.json();
