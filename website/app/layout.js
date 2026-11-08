@@ -1,5 +1,6 @@
 import "./globals.css";
 import { siteConfig } from "@/lib/config";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata = {
   title: `${siteConfig.appName} | Exam Seat Allocation`,
@@ -17,7 +18,11 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   );
 }

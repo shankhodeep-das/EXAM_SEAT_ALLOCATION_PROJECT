@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const prisma = require("../config/prisma");
 
 // Verify token and fetch the latest user role from database
-exports.authenticate = async (req, res, next) => {
+exports.authenticates  = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
