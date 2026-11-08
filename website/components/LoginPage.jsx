@@ -54,8 +54,7 @@ export default function LoginPage() {
                 }),
             });
             }
-
-            // Temporary development approach for authentication
+            
             localStorage.setItem("token", data.token);
             localStorage.setItem("user", JSON.stringify(data.user));
 
