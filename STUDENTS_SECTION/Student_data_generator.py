@@ -1,167 +1,121 @@
+
 import os
 import random
+import uuid
 
 first_names = [
-    "Aarav",
-    "Vivaan",
-    "Aditya",
-    "Diya",
-    "Kabir",
-    "Ananya",
-    "Rohan",
-    "Priya",
-    "Arjun",
-    "Sneha",
-    "Rahul",
-    "Neha",
-    "Amit",
-    "Pooja",
-    "Kunal",
-    "Riya",
-    "Sayan",
-    "Megha",
-    "Abhishek",
-    "Tanvi",
-    "Sourav",
-    "Puja",
-    "Dev",
-    "Ishita",
-    "Manish",
+    "Aarav", "Vivaan", "Aditya", "Diya", "Kabir",
+    "Ananya", "Rohan", "Priya", "Arjun", "Sneha",
+    "Rahul", "Neha", "Amit", "Pooja", "Kunal",
+    "Riya", "Sayan", "Megha", "Abhishek", "Tanvi",
+    "Sourav", "Puja", "Dev", "Ishita", "Manish"
 ]
+
 last_names = [
-    "Sharma",
-    "Gupta",
-    "Verma",
-    "Patel",
-    "Singh",
-    "Roy",
-    "Das",
-    "Sen",
-    "Mehta",
-    "Ghosh",
-    "Kumar",
-    "Mukherjee",
-    "Chatterjee",
-    "Banerjee",
-    "Paul",
-    "Dey",
-    "Bose",
-    "Naskar",
-    "Pradhan",
-    "Mondal",
-    "Tiwari",
-    "Joshi",
-    "Rao",
-    "Tivary",
-    "Menon",
+    "Sharma", "Gupta", "Verma", "Patel", "Singh",
+    "Roy", "Das", "Sen", "Mehta", "Ghosh",
+    "Kumar", "Mukherjee", "Chatterjee", "Banerjee",
+    "Paul", "Dey", "Bose", "Naskar", "Pradhan",
+    "Mondal", "Tiwari", "Joshi", "Rao", "Menon"
 ]
 
-sections = ["A", "B", "C","D", "E", "F", "G", "H", "I", "J"]
+sections = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
 
-no_of_sections = [1,2,3,4,5,6]
 
-subjects_pool = [
-    "Math",
-    "Physics",
-    "Chemistry",
-    "Biology",
-    "Computer",
-    "English",
-    "Python",
-    "Data Structures",
-    "Database",
-    "Networks",
-    "Algorithms",
-    "Java",
-    "C++",
-    "Web Dev",
-    "Operating Systems",
-    "Statistics",
-    "Cyber Security",
-    "Cloud Computing",
+brainware_courses = [
+    "B.Tech (Computer Science & Engineering)",
+    "B.Tech (CSE - Artificial Intelligence & Machine Learning)",
+    "B.Tech (CSE - Cyber Security)",
+    "B.Tech (CSE - Data Science & AI)",
+    "B.Tech (CSE - AI & Robotics)",
+    "B.Tech (Biotechnology)",
+    "BCA (Bachelor of Computer Applications)",
+    "BCA (Artificial Intelligence & Machine Learning)",
+    "B.Sc. (Hons.) in Advanced Networking & Cyber Security",
+    "B.Sc. (Hons.) in Agriculture",
+    "B.Sc. (Hons.) in Biotechnology",
+    "B.Sc. (Hons.) in Food, Nutrition & Dietetics",
+    "B.Sc. (Hons.) in Psychology",
+    "B.Sc. (Hons.) in Animation & VFX",
+    "B.Sc. (Hons.) in Media Science & Journalism",
+    "B.Sc. in Nursing",
+    "BBA (Bachelor of Business Administration)",
+    "BBA (Business Analytics)",
+    "BBA (Digital Marketing)",
+    "BBA (Hospital Management)",
+    "B.Com (Hons.) in Banking & Finance",
+    "B.Pharm (Bachelor of Pharmacy)",
+    "BPT (Bachelor of Physiotherapy)",
+    "B.Optom (Bachelor of Optometry)",
+    "B.Sc. in Medical Laboratory Technology (BMLT)",
+    "B.Sc. in Operation Theatre Technology (BOTT)",
+    "B.Sc. in Critical Care Technology",
+    "B.Sc. in Physician Assistant (BPA)",
+    "B.A. (Hons.) in Applied English",
+    "LL.B. (Bachelor of Laws)",
+    "B.A. LL.B. (Hons.)",
+    "BBA LL.B. (Hons.)",
+    "M.Tech (Computer Science & Engineering)",
+    "M.Tech (Robotics & Automation)",
+    "MCA (Master of Computer Applications)",
+    "M.Sc. in Cyber Security / Advanced Networking",
+    "M.Sc. in Biotechnology",
+    "M.Sc. in Food & Nutrition",
+    "M.Sc. in Mathematics",
+    "M.Sc. in Agriculture",
+    "M.Sc. in Media Science",
+    "MBA (Master of Business Administration)",
+    "MBA in Hospital & Healthcare Management",
+    "M.Com (Master of Commerce)",
+    "M.Pharm (Master of Pharmacy)",
+    "M.Optom (Master of Optometry)",
+    "M.A. in English",
+    "LL.M. (Master of Laws)",
+    "Diploma in Computer Science & Engineering",
+    "Diploma in Mechanical Engineering",
+    "Diploma in Electrical Engineering",
+    "D.Pharm (Diploma in Pharmacy)",
+    "DMLT (Diploma in Medical Laboratory Technology)",
+    "GNM (General Nursing & Midwifery)",
+    "Ph.D."
 ]
+# Number of new students to generate per course
+no_of_students = 200
 
-brainware_courses= [
-    "BTECH(CSE)",
-    "BTECH(CSE_AI-ML)",
-    "BTECH(CSE_CYBER_SECURITY)",
-    "BTECH(CSE_DATA_SCIENCE_AI)",
-    "BTECH(CSE_AI_ROBOTICS)",
-    "BTECH(BIOTECH)",
-    "BCA",
-    "BCA(AI/ML)",
-    "BSC(NETWORKING_CYBER_SECURITY)",
-    "BSC(AGRICULTURE)",
-    "BSC(BIOTECH)",
-    "BSC(NUTRITION_DIETETICS)",
-    "BSC(PSYCHOLOGY)",
-    "BSC(ANIMATION_VFX)",
-    "BSC(MEDIA_JOURNALISM)",
-    "BSC(NURSING)",
-    "BBA",
-    "BBA(BUSINESS_ANALYTICS)",
-    "BBA(DIGITAL_MARKETING)",
-    "BBA(HOSPITAL_MGMT)",
-    "BCOM(BANKING_FINANCE)",
-    "BPHARM",
-    "BPT",
-    "BOPTOM",
-    "BSC(BMLT)",
-    "BSC(BOTT)",
-    "BSC(CRITICAL_CARE)",
-    "BSC(PA)",
-    "BA(ENGLISH)",
-    "LLB",
-    "BA_LLB",
-    "BBA_LLB",
-    "MTECH(CSE)",
-    "MTECH(ROBOTICS_AUTOMATION)",
-    "MCA",
-    "MSC(CYBER_SECURITY)",
-    "MSC(BIOTECH)",
-    "MSC(FOOD_NUTRITION)",
-    "MSC(MATHS)",
-    "MSC(AGRICULTURE)",
-    "MSC(MEDIA)",
-    "MBA",
-    "MBA(HOSPITAL_HEALTHCARE)",
-    "MCOM",
-    "MPHARM",
-    "MOPTOM",
-    "MA(ENGLISH)",
-    "LLM",
-    "DIPLOMA(CSE)",
-    "DIPLOMA(ME)",
-    "DIPLOMA(EE)",
-    "DPHARM",
-    "DMLT",
-    "GNM",
-    "PHD",
-]
+# Semester 1 is valid for every course
+semester = 1
 
-
-
-
-script_dir = os.path.dirname(__file__)
+script_dir = os.path.dirname(os.path.abspath(__file__))
 file_path = os.path.join(script_dir, "Students_Data.txt")
 
-no_of_lines = 200
+print(f"Generating {no_of_students} students per course...")
 
+with open(file_path, "w", encoding="utf-8") as file:
+    for course in brainware_courses:
+        for _ in range(no_of_students):
 
+            full_name = (
+                f"{random.choice(first_names)} "
+                f"{random.choice(last_names)}"
+            )
 
-print(f"Generating {no_of_lines} student records... Please wait.")
+            email_id = f"student_{uuid.uuid4().hex[:12]}@seatwise.demo"
 
-with open(file_path, "w", encoding="utf-8") as f:
-  for i in range(len(brainware_courses)):
-    for k in range(no_of_lines):
-        roll_no = f"BWU/{brainware_courses[i]}/25/{k+1:03d}"
-        name = f"{random.choice(first_names)} {random.choice(last_names)}"
-        section = f"{random.choice(sections)}"
-        sub1, sub2, sub3, sub4 = random.sample(subjects_pool, 4)
+            section = random.choice(sections)
 
-        pref_room = random.choice([True, False])
-        req_status = random.choice([True, False])
-        line = f"{roll_no},{name},{section},{sub1},{sub2},{sub3},{sub4},{pref_room},{req_status}\n"
-        f.write(line)
+            # Generate a unique temporary password
+            password = f"SW@{uuid.uuid4().hex[:10]}"
 
-print(f"Successfully generated {no_of_lines} records!")
+            special_req = random.choice([True, False])
+            special_seat_req = random.choice([True, False])
+
+            line = (
+                f"{full_name}|{email_id}|{section}|{semester}|"
+                f"{course}|{password}|{str(special_req).lower()}|"
+                f"{str(special_seat_req).lower()}\n"
+            )
+
+            file.write(line)
+
+print(f"Generated {len(brainware_courses) * no_of_students} records.")
+print(f"File saved at: {file_path}")

@@ -1,0 +1,4 @@
+{"scripts": {
+  "start": "node src/server.js",
+  "allocate": "node src/scripts/allocateSeats.js"
+}}

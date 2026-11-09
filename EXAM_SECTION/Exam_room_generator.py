@@ -1,92 +1,59 @@
-import itertools
+
 import os
 import random
+# Building distribution
+buildings = {
+    "UB1": 209,
+    "UB2": 208,
+    "UB3": 208
+}
 
-first_names = [
-    "Aarav",
-    "Vivaan",
-    "Aditya",
-    "Diya",
-    "Kabir",
-    "Ananya",
-    "Rohan",
-    "Priya",
-    "Arjun",
-    "Sneha",
-    "Rahul",
-    "Neha",
-    "Amit",
-    "Pooja",
-    "Kunal",
-    "Riya",
-    "Sayan",
-    "Megha",
-    "Abhishek",
-    "Tanvi",
-    "Sourav",
-    "Puja",
-    "Dev",
-    "Ishita",
-    "Manish",
+# Existing SeatWise room layouts
+room_layouts = [
+    (6, 5),
+    (5, 10),
+    (10, 6)
 ]
-
-last_names = [
-    "Sharma",
-    "Gupta",
-    "Verma",
-    "Patel",
-    "Singh",
-    "Roy",
-    "Das",
-    "Sen",
-    "Mehta",
-    "Ghosh",
-    "Kumar",
-    "Mukherjee",
-    "Chatterjee",
-    "Banerjee",
-    "Paul",
-    "Dey",
-    "Bose",
-    "Naskar",
-    "Pradhan",
-    "Mondal",
-    "Tiwari",
-    "Joshi",
-    "Rao",
-    "Tivary",
-    "Menon",
+special_seat_quantity = [
+    3,5,6,7
 ]
-
-room_columns = [3, 4]
-room_rows = [4,5,6]
-special_room_capacity = [3, 4]
-unique_names = [
-    f"{f} {l}" for f, l in itertools.product(first_names, last_names)
-]
-
-random.shuffle(unique_names)
-
-script_dir = os.path.dirname(__file__)
+script_dir = os.path.dirname(os.path.abspath(__file__))
 file_path = os.path.join(script_dir, "Exam_Room_Details.txt")
 
-no_of_lines = 625
+total_rooms = sum(buildings.values())
 
-print(f"Generating {no_of_lines} exam room records with unique names...")
+print(f"Generating {total_rooms} room records...")
 
-with open(file_path, "w", encoding="utf-8") as f:
-  for i in range(1, no_of_lines + 1):
-    room_no = f"R-{i:03d}"
-    room_row = random.choice(room_rows)
-    room_column = random.choice(room_columns)
-    room_capacity_value = room_row * room_column
-    invigilator_name = unique_names[(i - 1) % len(unique_names)]
+with open(file_path, "w", encoding="utf-8") as file:
 
-    special_room_capacity_value = random.choice(special_room_capacity)
+    for building_code, room_count in buildings.items():
 
-    line = f"{room_no},{room_capacity_value},{room_row},{room_column},{invigilator_name},{special_room_capacity_value}\n"
-    f.write(line)
+        # Start after the existing 75 rooms
+        existing_room_count = {
+            "UB1": 80,
+            "UB2": 75,
+            "UB3": 70
+        }
 
-print(
-    f"Successfully generated {no_of_lines} records in Exam_Room_Details.txt!"
-)
+        start_number = existing_room_count[building_code]
+
+        for i in range(1, room_count + 1):
+
+            room_number = start_number + i
+
+            rows, columns = room_layouts[
+                (room_number - 1) % len(room_layouts)
+            ]
+
+            line = (
+                f"{building_code}|"
+                f"ROOM-{room_number:03d}|"
+                f"{rows}|"
+                f"{columns}|"
+                f"{random.choice(special_seat_quantity)}\n"
+            )
+
+            file.write(line)
+
+print(f"Successfully generated {total_rooms} room records!")
+print(f"File saved at: {file_path}")

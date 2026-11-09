@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -105,7 +104,7 @@ model Role {
 model User {
   id             Int       @id @default(autoincrement())
   email          String    @unique
-  passwordHash   String
+  passwordHash   String?
 
   roleId         Int
   role           Role      @relation(fields: [roleId], references: [id])
@@ -140,4 +139,78 @@ model SemesterSubject {
 
   @@unique([courseId, semester, subjectName, paperType])
   @@index([courseId, semester])
+}
+
+model Building {
+  id           Int      @id @default(autoincrement())
+  buildingCode String   @unique
+  buildingName String
+
+  rooms        Room[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Room {
+  id           Int      @id @default(autoincrement())
+  roomNumber   String
+  totalRows    Int
+  totalColumns Int
+  specialSeatCount Int       @default(0)
+
+  buildingId   Int
+  building     Building @relation(fields: [buildingId], references: [id])
+
+  seats        RoomSeat[]
+  examRooms    ExamRoom[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([buildingId, roomNumber])
+  @@index([buildingId])
+}
+
+model RoomSeat {
+  id           Int @id @default(autoincrement())
+  seatNumber   Int
+  rowNumber    Int
+  columnNumber Int
+
+  roomId       Int
+  room         Room @relation(fields: [roomId], references: [id])
+
+  @@unique([roomId, seatNumber])
+  @@unique([roomId, rowNumber, columnNumber])
+  @@index([roomId])
+}
+
+model ExamRoom {
+  id               Int      @id @default(autoincrement())
+
+  examId           Int
+  roomId           Int
+
+  specialSeatCount Int      @default(0)
+
+  exam             Exam     @relation(fields: [examId], references: [id])
+  room             Room     @relation(fields: [roomId], references: [id])
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([examId, roomId])
+  @@index([roomId])
+}
+
+model Exam {
+  id        Int      @id @default(autoincrement())
+  examName  String
+  examDate  DateTime
+
+  examRooms ExamRoom[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
