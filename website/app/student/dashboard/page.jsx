@@ -85,7 +85,7 @@ export default function StudentDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wider mb-1">Paper Subject</span>
-                <span className="text-base font-bold text-slate-900">{student.examName}</span>
+                <span className="text-base font-bold text-slate-900"> {student.examName}</span>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>

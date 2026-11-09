@@ -61,6 +61,8 @@ export default function LoginPage() {
 
             // Clear password from the form
             setPassword("");
+            setStudentCode("");
+            setEmail("");
 
             // Redirect according to account type
             if (result.user.roleGroup === "STUDENT") {
