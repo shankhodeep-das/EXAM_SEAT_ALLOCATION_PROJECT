@@ -13,143 +13,258 @@ const prisma = new PrismaClient({ adapter });
  * Helper to generate physical positions and color-based course interleaving
  * matching your Python create_positions logic.
  */
+
 function createPositions(rows, cols, capacity, specialCount, numberOfCourses) {
     const physicalPositions = [];
+
+    // Generate physical seats in row-major order.
     for (let i = 0; i < rows; i++) {
         for (let j = 0; j < cols; j++) {
-            physicalPositions.push({ row: i, col: j });
+            physicalPositions.push({
+                row: i,
+                col: j
+            });
         }
     }
+
     const validPhysical = physicalPositions.slice(0, capacity);
 
+    // Chessboard-based course distribution.
     const colors = {};
+
     if (numberOfCourses === 1) {
-        colors[0] = validPhysical.filter(pos => (pos.row + pos.col) % 2 === 0);
+        colors[0] = validPhysical;
     } else {
         for (let k = 0; k < numberOfCourses; k++) {
-            colors[k] = validPhysical.filter(pos => (pos.row + pos.col) % numberOfCourses === k);
+            colors[k] = validPhysical.filter(
+                pos => (pos.row + pos.col) % numberOfCourses === k
+            );
         }
     }
 
-    const validPositions = numberOfCourses === 1 ? colors[0] : validPhysical;
+    // Reserve special seats from the FIRST physical seat.
+    const safeSpecialCount = Math.min(
+        Math.max(0, specialCount),
+        validPhysical.length
+    );
 
-    // Pick first 'specialCount' positions as special seats
     const specialPositionsSet = new Set();
-    const specialPositionsList = validPositions.slice(0, specialCount);
-    specialPositionsList.forEach(p => specialPositionsSet.add(`${p.row},${p.col}`));
 
-    return { validPositions, specialPositionsSet, colors };
+    validPhysical
+        .slice(0, safeSpecialCount)
+        .forEach(pos => {
+            specialPositionsSet.add(`${pos.row},${pos.col}`);
+        });
+
+    return {
+        validPositions: validPhysical,
+        specialPositionsSet,
+        colors
+    };
 }
+
+
 
 function calculateAllocation(students, positions, specialPositionsSet) {
-    const eligibleCount = students.filter(s => s.specialSeatReq || s.specialReq).length;
-    const availableSpecial = positions.filter(p => specialPositionsSet.has(`${p.row},${p.col}`)).length;
+    const eligibleStudents = students.filter(
+        s => s.specialSeatReq || s.specialReq
+    );
+
+    const normalStudents = students.filter(
+        s => !s.specialSeatReq && !s.specialReq
+    );
+
+    // Special seats belonging to this course's chessboard pattern.
+    const availableSpecial = positions.filter(
+        pos => specialPositionsSet.has(`${pos.row},${pos.col}`)
+    ).length;
+
+    // All other positions are normal seats.
     const availableNormal = positions.length - availableSpecial;
-    const normalStudentCount = students.length - eligibleCount;
 
-    const specialFill = Math.min(eligibleCount, availableSpecial);
-    const normalFill = Math.min(normalStudentCount, availableNormal);
+    const specialFill = Math.min(
+        eligibleStudents.length,
+        availableSpecial
+    );
 
-    return { totalAllocated: specialFill + normalFill, specialFill };
+    const normalFill = Math.min(
+        normalStudents.length,
+        availableNormal
+    );
+
+    return {
+        totalAllocated: specialFill + normalFill,
+        specialFill
+    };
 }
 
-function selectCourses(remainingCoursesMap, rows, cols, capacity, specialCount, maxCourses) {
-    const availableCourses = Object.keys(remainingCoursesMap).filter(course => remainingCoursesMap[course].length > 0);
+
+
+function selectCourses(
+    remainingCoursesMap,
+    rows,
+    cols,
+    capacity,
+    specialCount,
+    maxCourses
+) {
+    const availableCourses = Object.keys(remainingCoursesMap)
+        .filter(course => remainingCoursesMap[course].length > 0)
+        .sort(
+            (a, b) =>
+                remainingCoursesMap[b].length -
+                remainingCoursesMap[a].length
+        );
+
     if (availableCourses.length === 0) return null;
 
-    // Sort courses descending by student count
-    const selectedCourses = availableCourses
-        .sort((a, b) => remainingCoursesMap[b].length - remainingCoursesMap[a].length)
-        .slice(0, maxCourses);
-
+    const selectedCourses = availableCourses.slice(0, maxCourses);
     const K = selectedCourses.length;
-    const { validPositions, colors } = createPositions(rows, cols, capacity, 0, K);
+
+    // Generate course positions and fixed special positions.
+    const {
+        validPositions,
+        specialPositionsSet,
+        colors
+    } = createPositions(
+        rows,
+        cols,
+        capacity,
+        specialCount,
+        K
+    );
 
     let bestPlan = null;
     let bestScore = [-1, -1];
 
-    // Simple permutation generator for courses
+    // Generate all possible course orders.
     function* permute(arr) {
-        if (arr.length <= 1) yield arr;
-        else {
+        if (arr.length <= 1) {
+            yield arr;
+        } else {
             for (let i = 0; i < arr.length; i++) {
-                const rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
-                for (const p of permute(rest)) yield [arr[i], ...p];
+                const rest = [
+                    ...arr.slice(0, i),
+                    ...arr.slice(i + 1)
+                ];
+
+                for (const p of permute(rest)) {
+                    yield [arr[i], ...p];
+                }
             }
         }
     }
 
     for (const courseOrder of permute(selectedCourses)) {
         const coursePositions = {};
-        const specialPositionsSet = new Set();
-        let specialSeatsLeft = specialCount;
+
         let totalAllocated = 0;
         let totalSpecial = 0;
 
         courseOrder.forEach((course, colorIndex) => {
             const assignedPositions = colors[colorIndex] || [];
+
             coursePositions[course] = assignedPositions;
 
-            const eligibleCount = remainingCoursesMap[course]
-                .filter(student => student.specialSeatReq || student.specialReq)
-                .length;
-            const courseSpecialCount = Math.min(
-                eligibleCount,
-                assignedPositions.length,
-                specialSeatsLeft
+            const allocation = calculateAllocation(
+                remainingCoursesMap[course],
+                assignedPositions,
+                specialPositionsSet
             );
-            assignedPositions.slice(0, courseSpecialCount).forEach(position => {
-                specialPositionsSet.add(`${position.row},${position.col}`);
-            });
-            specialSeatsLeft -= courseSpecialCount;
 
-            const allocation = calculateAllocation(remainingCoursesMap[course], assignedPositions, specialPositionsSet);
             totalAllocated += allocation.totalAllocated;
             totalSpecial += allocation.specialFill;
         });
 
         const score = [totalAllocated, totalSpecial];
-        if (score[0] > bestScore[0] || (score[0] === bestScore[0] && score[1] > bestScore[1])) {
+
+        if (
+            score[0] > bestScore[0] ||
+            (
+                score[0] === bestScore[0] &&
+                score[1] > bestScore[1]
+            )
+        ) {
             bestScore = score;
-            bestPlan = { coursePositions, specialPositionsSet, validPositions };
+
+            bestPlan = {
+                coursePositions,
+                specialPositionsSet,
+                validPositions
+            };
         }
     }
 
     return bestPlan;
 }
 
-function placeStudents(students, positions, specialPositionsSet, seatsGrid, courseName) {
+
+
+function placeStudents(
+    students,
+    positions,
+    specialPositionsSet,
+    seatsGrid,
+    courseName
+) {
     let remaining = [...students];
     let allocatedCount = 0;
 
-    // 1. Fill special positions first with eligible students
+    // 1. Allocate special students to reserved positions first.
     for (const pos of positions) {
         const posKey = `${pos.row},${pos.col}`;
+
         if (!specialPositionsSet.has(posKey)) continue;
 
-        const studentIndex = remaining.findIndex(s => s.specialSeatReq || s.specialReq);
-        if (studentIndex !== -1) {
-            const student = remaining.splice(studentIndex, 1)[0];
-            seatsGrid[pos.row][pos.col] = { student, courseName, isSpecial: true };
-            allocatedCount++;
-        }
-    }
+        const studentIndex = remaining.findIndex(
+            s => s.specialSeatReq || s.specialReq
+        );
 
-    // 2. Fill remaining positions with normal students
-    for (const pos of positions) {
-        const posKey = `${pos.row},${pos.col}`;
-        if (specialPositionsSet.has(posKey)) continue; // skip special spots already evaluated
-        if (seatsGrid[pos.row][pos.col] !== null) continue; // already occupied
-        const studentIndex = remaining.findIndex(s => !s.specialSeatReq && !s.specialReq);
-        if (studentIndex === -1) break;
+        if (studentIndex === -1) continue;
 
         const student = remaining.splice(studentIndex, 1)[0];
-        seatsGrid[pos.row][pos.col] = { student, courseName, isSpecial: false };
+
+        seatsGrid[pos.row][pos.col] = {
+            student,
+            courseName,
+            isSpecial: true
+        };
+
         allocatedCount++;
     }
 
-    return { remaining, allocatedCount };
+    // 2. Allocate normal students to normal positions.
+    for (const pos of positions) {
+        const posKey = `${pos.row},${pos.col}`;
+
+        // Never use reserved special seats for normal students.
+        if (specialPositionsSet.has(posKey)) continue;
+
+        if (seatsGrid[pos.row][pos.col] !== null) continue;
+
+        const studentIndex = remaining.findIndex(
+            s => !s.specialSeatReq && !s.specialReq
+        );
+
+        if (studentIndex === -1) break;
+
+        const student = remaining.splice(studentIndex, 1)[0];
+
+        seatsGrid[pos.row][pos.col] = {
+            student,
+            courseName,
+            isSpecial: false
+        };
+
+        allocatedCount++;
+    }
+
+    return {
+        remaining,
+        allocatedCount
+    };
 }
+
 
 function validateSeating(seatsGrid, rows, cols) {
     for (let i = 0; i < rows; i++) {
@@ -231,9 +346,10 @@ async function runSeatingAllocation(examId, maxCoursesPerRoom = 2) {
         const rows = room.totalRows;
         const cols = room.totalColumns;
         const capacity = room.seats.length > 0 ? room.seats.length : rows * cols;
-        const specialSeatsCount = roomEntry.specialSeatCount === null
-            ? capacity
-            : roomEntry.specialSeatCount;
+        const specialSeatsCount = Math.min(
+            Math.max(0, room.specialSeatCount || 0),
+            capacity
+        );
 
         const plan = selectCourses(
             courseWithStudents,

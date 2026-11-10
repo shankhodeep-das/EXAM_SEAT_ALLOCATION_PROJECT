@@ -513,6 +513,88 @@ async function importRooms(filePath) {
   console.log(`Total seats created: ${seatCount}`);
 }
 
+async function updateRoomSpecialSeats(filePath) {
+  const lines = readTxtFile(filePath);
+
+  let updated = 0;
+  let skipped = 0;
+
+  for (const line of lines) {
+    const fields = line.split("|").map(v => v.trim());
+
+    if (fields.length !== 5) {
+      throw new Error("Expected 5 fields in room TXT data");
+    }
+
+    const [
+      buildingCode,
+      roomNumber,
+      rowsValue,
+      columnsValue,
+      specialSeatsValue
+    ] = fields;
+
+    const specialSeatCount = Number(specialSeatsValue);
+
+    if (!Number.isInteger(specialSeatCount) || specialSeatCount < 0) {
+      throw new Error(`Invalid special seat count for ${roomNumber}`);
+    }
+
+    const building = await prisma.building.findUnique({
+      where: { buildingCode }
+    });
+
+    if (!building) {
+      console.log(`Building not found: ${buildingCode}`);
+      skipped++;
+      continue;
+    }
+
+    const room = await prisma.room.findUnique({
+      where: {
+        buildingId_roomNumber: {
+          buildingId: building.id,
+          roomNumber
+        }
+      }
+    });
+
+    if (!room) {
+      console.log(`Room not found: ${buildingCode} - ${roomNumber}`);
+      skipped++;
+      continue;
+    }
+
+    await prisma.room.update({
+      where: { id: room.id },
+      data: { specialSeatCount }
+    });
+
+    updated++;
+
+    console.log(
+      `Updated ${buildingCode} - ${roomNumber}: ${specialSeatCount} special seats`
+    );
+  }
+
+  const remainingRooms = await prisma.$executeRaw`
+    UPDATE "Room"
+    SET "specialSeatCount" =
+      FLOOR(
+        RANDOM() * LEAST(7, "totalRows" * "totalColumns")
+      )::INT + 1
+    WHERE "specialSeatCount" = 0
+  `;
+
+
+
+  console.log("\nSpecial seat update completed!");
+  console.log(`Rooms updated: ${updated}`);
+  console.log(`Rooms skipped: ${skipped}`);
+  console.log(`Rooms assigned random special seats: ${remainingRooms}`);
+}
+
+
 
 
 // -------------------------------------
@@ -523,10 +605,11 @@ async function main() {
   console.log("\n========== SEATWISE DATA IMPORT ==========");
   console.log("1. Import Students");
   console.log("2. Import Rooms");
+  console.log("3. Update Room Special Seats");
 
   const choice = await ask("\nSelect option: ");
 
-  if (choice !== "1" && choice !== "2") {
+  if (!["1", "2", "3"].includes(choice)) {
     throw new Error("Invalid option");
   }
 
@@ -538,8 +621,10 @@ async function main() {
 
   if (choice === "1") {
     await importStudents(filePath);
-  } else {
+  } else if (choice === "2") {
     await importRooms(filePath);
+  } else {
+    await updateRoomSpecialSeats(filePath);
   }
 }
 

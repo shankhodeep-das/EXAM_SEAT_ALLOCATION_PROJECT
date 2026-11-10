@@ -67,8 +67,10 @@ export default function LoginPage() {
             // Redirect according to account type
             if (result.user.roleGroup === "STUDENT") {
             router.push("/student/dashboard");
-            }else if (result.user.roleGroup === "STAFF") {
+            }else if (result.user.roleGroup === "STAFF" || result.user.roleGroup === "ADMIN") {
             router.push("/staff/dashboard");
+            }else {
+              console.log("Fucked UP")
             }
 
         } catch (err) {
