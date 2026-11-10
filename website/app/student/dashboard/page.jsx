@@ -11,11 +11,14 @@ import {
   MapPin,
   BookOpen,
   Mail,
+  DoorOpen,
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 export default function StudentDashboard() {
   const router = useRouter();
+  const { setUser } = useAuth();
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -53,7 +56,8 @@ export default function StudentDashboard() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    router.push("/login");
+    setUser(null);
+    router.replace("/");
   };
 
   const student = dashboard?.student;
@@ -88,7 +92,7 @@ export default function StudentDashboard() {
           </div>
         ) : (
           <>
-            {/* WELCOME BANNER WITH BEAUTIFUL SIGN OUT BUTTON */}
+            {/* WELCOME BANNER */}
             <div className="dash-welcome-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
               <div>
                 <div style={{ fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "1px", color: "#2563eb", marginBottom: "4px" }}>
@@ -137,86 +141,86 @@ export default function StudentDashboard() {
               </button>
             </div>
 
-            {/* DASHBOARD CONTENT GRID (Left Column sized naturally, Right Column handles seating map) */}
-            <div className="dash-grid" style={{ gridTemplateColumns: "360px 1fr", gap: "28px", alignItems: "start" }}>
+            {/* DASHBOARD GRID */}
+            <div className="dash-grid" style={{ gridTemplateColumns: "340px 1fr", gap: "24px", alignItems: "start" }}>
               
-              {/* LEFT PANEL: Student & Seating Details (Compact & Clean) */}
-              <div className="dash-panel" style={{ height: "fit-content" }}>
-                <h2 className="dash-panel-title" style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: "14px", marginBottom: "16px", fontSize: "1.05rem" }}>
-                  <Calendar className="w-5 h-5 text-blue-600" />
+              {/* LEFT PANEL: Compact Docket */}
+              <div className="dash-panel" style={{ height: "fit-content", padding: "20px" }}>
+                <h2 className="dash-panel-title" style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: "12px", marginBottom: "14px", fontSize: "1rem" }}>
+                  <Calendar className="w-4 h-4 text-blue-600" />
                   <span>Examination Docket</span>
                 </h2>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   
                   {/* Course */}
-                  <div className="dash-info-card" style={{ padding: "14px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase", marginBottom: "4px" }}>
-                      <BookOpen size={13} className="text-blue-600" />
+                  <div className="dash-info-card" style={{ padding: "10px 12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "10px", fontWeight: "700", textTransform: "uppercase", marginBottom: "2px" }}>
+                      <BookOpen size={12} className="text-blue-600" />
                       <span>Enrolled Course</span>
                     </div>
-                    <div style={{ fontSize: "14px", fontWeight: "700", color: "#0f172a", paddingLeft: "19px" }}>
+                    <div style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", paddingLeft: "18px" }}>
                       {student.courseName}
                     </div>
                   </div>
 
                   {/* Email */}
-                  <div className="dash-info-card" style={{ padding: "14px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase", marginBottom: "4px" }}>
-                      <Mail size={13} className="text-indigo-600" />
+                  <div className="dash-info-card" style={{ padding: "10px 12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "10px", fontWeight: "700", textTransform: "uppercase", marginBottom: "2px" }}>
+                      <Mail size={12} className="text-indigo-600" />
                       <span>College Email</span>
                     </div>
-                    <div style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", paddingLeft: "19px", wordBreak: "break-all" }}>
+                    <div style={{ fontSize: "12px", fontWeight: "700", color: "#0f172a", paddingLeft: "18px", wordBreak: "break-all" }}>
                       {student.email}
                     </div>
                   </div>
 
                   {/* Building & Room Grid */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                    <div className="dash-info-card" style={{ padding: "12px" }}>
-                      <span style={{ display: "block", fontSize: "10px", fontWeight: "700", textTransform: "uppercase", color: "#64748b", marginBottom: "4px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                    <div className="dash-info-card" style={{ padding: "10px" }}>
+                      <span style={{ display: "block", fontSize: "10px", fontWeight: "700", textTransform: "uppercase", color: "#64748b", marginBottom: "2px" }}>
                         Building
                       </span>
-                      <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>
-                        <Building2 size={14} className="text-blue-600 shrink-0" />
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "700", color: "#0f172a" }}>
+                        <Building2 size={13} className="text-blue-600 shrink-0" />
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{room.building}</span>
                       </div>
                     </div>
-                    <div className="dash-info-card" style={{ padding: "12px" }}>
-                      <span style={{ display: "block", fontSize: "10px", fontWeight: "700", textTransform: "uppercase", color: "#64748b", marginBottom: "4px" }}>
+                    <div className="dash-info-card" style={{ padding: "10px" }}>
+                      <span style={{ display: "block", fontSize: "10px", fontWeight: "700", textTransform: "uppercase", color: "#64748b", marginBottom: "2px" }}>
                         Room
                       </span>
-                      <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>
-                        <MapPin size={14} className="text-emerald-600 shrink-0" />
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "700", color: "#0f172a" }}>
+                        <MapPin size={13} className="text-emerald-600 shrink-0" />
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{room.roomNumber}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Confirmed Seat Badge */}
-                  <div className="dash-seat-highlight" style={{ padding: "16px" }}>
+                  <div className="dash-seat-highlight" style={{ padding: "14px", borderRadius: "12px" }}>
                     <div>
                       <span style={{ display: "block", fontSize: "10px", fontWeight: "700", textTransform: "uppercase", color: "#bfdbfe", marginBottom: "2px" }}>
                         Allocated Seat Code
                       </span>
-                      <span style={{ fontFamily: "monospace", fontSize: "1.5rem", fontWeight: "900", letterSpacing: "-0.5px" }}>
+                      <span style={{ fontFamily: "monospace", fontSize: "1.4rem", fontWeight: "900", letterSpacing: "-0.5px" }}>
                         {seatCode}
                       </span>
                       {studentSeat && (
-                        <span style={{ display: "block", fontSize: "11px", color: "#dbeafe", marginTop: "2px" }}>
+                        <span style={{ display: "block", fontSize: "11px", color: "#dbeafe", marginTop: "1px" }}>
                           Row {studentSeat.row} • Column {studentSeat.column}
                         </span>
                       )}
                     </div>
-                    <div style={{ background: "rgba(255, 255, 255, 0.2)", padding: "10px", borderRadius: "12px", backdropFilter: "blur(4px)" }}>
-                      <CheckCircle2 size={24} color="#ffffff" />
+                    <div style={{ background: "rgba(255, 255, 255, 0.2)", padding: "8px", borderRadius: "10px", backdropFilter: "blur(4px)" }}>
+                      <CheckCircle2 size={22} color="#ffffff" />
                     </div>
                   </div>
 
                 </div>
               </div>
 
-              {/* RIGHT PANEL: RedBus Style Hall Seating Map */}
+              {/* RIGHT PANEL: Authentic Classroom Architecture Map */}
               <div className="dash-panel">
                 <h2 className="dash-panel-title" style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: "14px", marginBottom: "16px", fontSize: "1.05rem" }}>
                   <MapPin className="w-5 h-5 text-blue-600" />
@@ -237,57 +241,140 @@ export default function StudentDashboard() {
                   </div>
                 </div>
 
-                {/* RedBus Seating Grid Container */}
-                <div className="bus-seat-container" style={{ maxWidth: "100%", overflowX: "auto" }}>
-                  <div className="bus-steering-top">
-                    🚪 Front Invigilator Desk / Blackboard
+                {/* Classroom Blueprint Container */}
+                <div style={{
+                  background: "#f8fafc",
+                  border: "2px solid #cbd5e1",
+                  borderRadius: "20px",
+                  padding: "20px",
+                  position: "relative",
+                  boxShadow: "inset 0 2px 4px rgba(0,0,0,0.02)"
+                }}>
+                  
+                  {/* Classroom Top Header: Entrance Gate & Teacher Desk/Blackboard */}
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "20px",
+                    borderBottom: "2px dashed #cbd5e1",
+                    paddingBottom: "12px",
+                    gap: "12px"
+                  }}>
+                    {/* Entrance Gate Indicator */}
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      background: "#e2e8f0",
+                      padding: "6px 12px",
+                      borderRadius: "8px",
+                      fontSize: "11px",
+                      fontWeight: "700",
+                      color: "#475569",
+                      border: "1px solid #cbd5e1"
+                    }}>
+                      <DoorOpen size={14} className="text-blue-600" />
+                      <span>ENTRANCE GATE</span>
+                    </div>
+
+                    {/* Invigilator Desk & Blackboard */}
+                    <div style={{
+                      background: "#ffffff",
+                      border: "1px solid #cbd5e1",
+                      padding: "6px 16px",
+                      borderRadius: "10px",
+                      fontSize: "11px",
+                      fontWeight: "800",
+                      color: "#1e293b",
+                      textAlign: "center",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                      letterSpacing: "0.5px"
+                    }}>
+                      👨‍🏫 INVIGILATOR DESK & BLACKBOARD
+                    </div>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
-                    {room.rows.map((row, rowIndex) => (
-                      <div
-                        key={`row-${rowIndex + 1}`}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: `repeat(${row.length}, minmax(38px, 1fr))`,
-                          gap: "6px",
-                          minWidth: "max-content",
-                        }}
-                      >
-                        {row.map((seat) => (
-                          <div
-                            key={`${seat.row}-${seat.column}`}
-                            className={`bus-seat ${
-                              seat.isCurrentStudent
-                                ? "my-seat"
-                                : seat.isEmpty
-                                ? ""
-                                : "occupied"
-                            }`}
-                            style={
-                              seat.isCurrentStudent
-                                ? {
-                                    background: "#2563eb",
-                                    borderColor: "#1d4ed8",
-                                    color: "#ffffff",
-                                    boxShadow: "0 0 12px rgba(37, 99, 235, 0.5)",
-                                    transform: "scale(1.08)",
-                                    zIndex: 2,
-                                  }
-                                : undefined
-                            }
-                            title={
-                              seat.isCurrentStudent
-                                ? "Your assigned seat"
-                                : `${seat.isEmpty ? "Empty" : "Occupied"} — Row ${seat.row}, Column ${seat.column}`
-                            }
-                          >
-                            {seat.row},{seat.column}
-                          </div>
-                        ))}
-                      </div>
-                    ))}
+                  {/* Scrollable Classroom Chair-Table Layout */}
+                  <div 
+                    style={{ 
+                      maxH: "420px", 
+                      overflowY: "auto", 
+                      overflowX: "auto", 
+                      padding: "10px 4px",
+                      scrollbarWidth: "thin"
+                    }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
+                      {room.rows.map((row, rowIndex) => (
+                        <div
+                          key={`row-${rowIndex + 1}`}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: `repeat(${row.length}, minmax(54px, 1fr))`,
+                            gap: "8px",
+                            minWidth: "max-content",
+                          }}
+                        >
+                          {row.map((seat) => (
+                            <div
+                              key={`${seat.row}-${seat.column}`}
+                              className={`bus-seat ${
+                                seat.isCurrentStudent
+                                  ? "my-seat"
+                                  : seat.isEmpty
+                                  ? ""
+                                  : "occupied"
+                              }`}
+                              style={{
+                                width: "56px",
+                                height: "46px",
+                                borderRadius: "6px 6px 10px 10px",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "11px",
+                                fontFamily: "monospace",
+                                fontWeight: "bold",
+                                borderWidth: "1.5px",
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.03)",
+                                position: "relative",
+                                ...(seat.isCurrentStudent
+                                  ? {
+                                      background: "#2563eb",
+                                      borderColor: "#1d4ed8",
+                                      color: "#ffffff",
+                                      boxShadow: "0 0 14px rgba(37, 99, 235, 0.6)",
+                                      transform: "scale(1.06)",
+                                      zIndex: 2,
+                                    }
+                                  : {})
+                              }}
+                              title={
+                                seat.isCurrentStudent
+                                  ? "Your assigned seat"
+                                  : `${seat.isEmpty ? "Empty" : "Occupied"} — Row ${seat.row}, Column ${seat.column}`
+                              }
+                            >
+                              {/* Attached desktop arm-tablet pad visual line for classroom chair-table */}
+                              <div style={{
+                                position: "absolute",
+                                top: "-3px",
+                                right: "4px",
+                                width: "12px",
+                                height: "3px",
+                                backgroundColor: seat.isCurrentStudent ? "#93c5fd" : "#cbd5e1",
+                                borderRadius: "2px"
+                              }} />
+                              <span>{seat.row},{seat.column}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
                 </div>
 
                 {/* Legend */}

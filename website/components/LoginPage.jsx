@@ -17,7 +17,7 @@ export default function LoginPage() {
     const [studentCode, setStudentCode] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const { user, authLoading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
 
     useEffect(() => {
       if (!authLoading && user) {
@@ -27,7 +27,7 @@ export default function LoginPage() {
           router.replace("/staff/dashboard");
         }
       }
-    }, [user, loading, router]);
+    }, [user, authLoading, router]);
     const handleSubmit = async (e) => {
         e.preventDefault();
 
