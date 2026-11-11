@@ -1,0 +1,23 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "android-apk": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://esap-klrs.onrender.com"
+      }
+    },
+    "ios-store": {
+      "distribution": "store",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://esap-klrs.onrender.com"
+      }
+    }
+  }
+}

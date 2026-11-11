@@ -1,16 +1,20 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "SeatWise",
+    "slug": "seatwise",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "seatwise",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "com.kashasri.seatwise",
+      "buildNumber": "1",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.kashasri.seatwise",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -33,10 +37,22 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "7fa171f7-81fa-4107-b205-e126d0eb54ff"
+      }
+    },
+    "owner": "alpha6"
   }
 }
