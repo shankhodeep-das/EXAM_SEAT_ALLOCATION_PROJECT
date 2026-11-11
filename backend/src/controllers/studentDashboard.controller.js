@@ -33,6 +33,7 @@ exports.getStudentDashboard = async (req, res) => {
           building: roomMatch[1],
           roomNumber: roomMatch[2],
           allocatedStudents: 0,
+          invigilators: [],
           rows: [],
         };
         rooms.push(currentRoom);
@@ -47,6 +48,20 @@ exports.getStudentDashboard = async (req, res) => {
         continue;
       }
 
+      const invigilatorsMatch = line.match(/^Invigilators:\s*(.*?)\s*$/);
+      if (invigilatorsMatch) {
+        currentRoom.invigilators = invigilatorsMatch[1]
+          .split(/\s+\|\s+/)
+          .filter(Boolean)
+          .map((entry) => {
+            const facultyMatch = entry.match(/^(.*?)\s+\(([^()]*)\)$/);
+            return facultyMatch
+              ? { fullName: facultyMatch[1], employeeId: facultyMatch[2] }
+              : { fullName: entry, employeeId: null };
+          });
+        continue;
+      }
+
       if (!/^Row\s+\d+:/i.test(line)) continue;
 
       const rowSeats = [];
@@ -58,11 +73,18 @@ exports.getStudentDashboard = async (req, res) => {
         const seatText = match[3].trim();
         const rollNoMatch = seatText.match(/\((BWU\/[^)]+)\)/);
         const rollNo = rollNoMatch ? rollNoMatch[1] : null;
+        const isEmpty = seatText === "EMPTY";
+        const courseName = rollNoMatch
+          ? seatText.slice(0, rollNoMatch.index).trim()
+          : null;
 
         rowSeats.push({
           row,
           column,
-          isEmpty: seatText === "EMPTY",
+          isEmpty,
+          courseName,
+          rollNo,
+          isSpecial: /\[SPECIAL\]/.test(seatText),
           isCurrentStudent: rollNo === user.student.rollNo,
         });
       }

@@ -14,6 +14,9 @@ const {
   getStudentDashboard,
 } = require("../controllers/studentDashboard.controller");
 const {
+  getStaffDashboard,
+} = require("../controllers/staffDashboard.controller");
+const {
   authenticates,
 } = require("../middleware/auth.middleware");
 
@@ -25,6 +28,7 @@ router.get("/me", authenticates, (req, res) => {
 });
 
 router.get("/student/dashboard", authenticates, getStudentDashboard);
+router.get("/staff/dashboard", authenticates, getStaffDashboard);
 router.post("/students/login", studentLogin);
 router.post("/staff/login", staffLogin);
 

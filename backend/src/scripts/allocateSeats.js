@@ -287,6 +287,24 @@ function validateSeating(seatsGrid, rows, cols) {
     return true;
 }
 
+function getRoomInvigilators(availableInvigilators, roomIndex, roomNumber) {
+    const firstInvigilatorIndex = (roomIndex - 1) * 2;
+    const roomInvigilators = availableInvigilators.slice(
+        firstInvigilatorIndex,
+        firstInvigilatorIndex + 2
+    );
+
+    if (roomInvigilators.length < 2) {
+        throw new Error(
+            `Not enough active faculty to assign two invigilators to ${roomNumber}. ` +
+            `Need ${roomIndex * 2} faculty, but only ${availableInvigilators.length} are available. ` +
+            "No allocation report was generated."
+        );
+    }
+
+    return roomInvigilators;
+}
+
 async function runSeatingAllocation(examId, maxCoursesPerRoom = 2) {
     console.log("Fetching student and room details from PostgreSQL via Prisma...");
     const reportLines = [
@@ -338,6 +356,21 @@ async function runSeatingAllocation(examId, maxCoursesPerRoom = 2) {
         throw new Error("No students were found in the database. No allocation report was generated.");
     }
 
+    const availableInvigilators = await prisma.faculty.findMany({
+        where: {
+            staffType: "FACULTY",
+            isActive: true
+        },
+        select: {
+            employeeId: true,
+            fullName: true
+        },
+        orderBy: [
+            { fullName: "asc" },
+            { employeeId: "asc" }
+        ]
+    });
+
     let totalAllocated = 0;
     let roomsUsed = 0;
 
@@ -364,6 +397,12 @@ async function runSeatingAllocation(examId, maxCoursesPerRoom = 2) {
             console.log("No more courses available to allocate.");
             break;
         }
+
+        const roomInvigilators = getRoomInvigilators(
+            availableInvigilators,
+            roomsUsed + 1,
+            room.roomNumber
+        );
 
         // Initialize empty grid
         const seatsGrid = Array.from({ length: rows }, () => Array(cols).fill(null));
@@ -392,6 +431,9 @@ async function runSeatingAllocation(examId, maxCoursesPerRoom = 2) {
         console.log(`Successfully allocated Room: ${room.roomNumber} (${roomTotal} students placed)`);
         reportLines.push(
             `Room: ${room.building.buildingName} - ${room.roomNumber}`,
+            `Invigilators: ${roomInvigilators
+                .map(faculty => `${faculty.fullName} (${faculty.employeeId})`)
+                .join(" | ")}`,
             `Allocated students: ${roomTotal}`,
             ...seatsGrid.map((row, rowIndex) => {
                 const seats = row.map((seat, colIndex) => {
@@ -444,5 +486,6 @@ module.exports = {
     createPositions,
     selectCourses,
     placeStudents,
-    validateSeating
+    validateSeating,
+    getRoomInvigilators
 };

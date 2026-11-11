@@ -68,6 +68,22 @@ export default function StudentDashboard() {
     ? `R${studentSeat.row}C${studentSeat.column}`
     : "Not assigned";
 
+  const getSeatDetails = (seat) => {
+    if (seat.isEmpty) {
+      return `Available seat\nRow ${seat.row}, Column ${seat.column}`;
+    }
+
+    return [
+      seat.isCurrentStudent ? "Your seat" : "Occupied seat",
+      `Row ${seat.row}, Column ${seat.column}`,
+      seat.courseName && `Course: ${seat.courseName}`,
+      seat.rollNo && `Roll No: ${seat.rollNo}`,
+      seat.isSpecial && "Special seat",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  };
+
   return (
     <div className="dash-container">
       <Navbar />
@@ -288,17 +304,33 @@ export default function StudentDashboard() {
                       fontWeight: "800",
                       color: "#1e293b",
                       textAlign: "center",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
                       letterSpacing: "0.5px"
                     }}>
-                      👨‍🏫 INVIGILATOR DESK & BLACKBOARD
+                      <span>INVIGILATOR DESK & BLACKBOARD</span>
+                      {room.invigilators?.length > 0 ? (
+                        <span style={{ fontWeight: "600", letterSpacing: 0 }}>
+                          {room.invigilators.map((faculty) => (
+                            faculty.employeeId
+                              ? `${faculty.fullName} (${faculty.employeeId})`
+                              : faculty.fullName
+                          )).join(" • ")}
+                        </span>
+                      ) : (
+                        <span style={{ fontWeight: "600", letterSpacing: 0 }}>
+                          No invigilators listed for this room
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   {/* Scrollable Classroom Chair-Table Layout */}
                   <div 
-                    style={{ 
-                      maxH: "420px", 
+                    style={{
+                      maxHeight: "420px",
                       overflowY: "auto", 
                       overflowX: "auto", 
                       padding: "10px 4px",
@@ -317,13 +349,14 @@ export default function StudentDashboard() {
                           }}
                         >
                           {row.map((seat) => (
-                            <div
+                            <button
+                              type="button"
                               key={`${seat.row}-${seat.column}`}
                               className={`bus-seat ${
                                 seat.isCurrentStudent
                                   ? "my-seat"
                                   : seat.isEmpty
-                                  ? ""
+                                  ? "available"
                                   : "occupied"
                               }`}
                               style={{
@@ -338,8 +371,12 @@ export default function StudentDashboard() {
                                 fontFamily: "monospace",
                                 fontWeight: "bold",
                                 borderWidth: "1.5px",
+                                borderStyle: "solid",
                                 boxShadow: "0 2px 4px rgba(0,0,0,0.03)",
                                 position: "relative",
+                                padding: 0,
+                                cursor: "help",
+                                textAlign: "center",
                                 ...(seat.isCurrentStudent
                                   ? {
                                       background: "#2563eb",
@@ -349,13 +386,20 @@ export default function StudentDashboard() {
                                       transform: "scale(1.06)",
                                       zIndex: 2,
                                     }
-                                  : {})
+                                  : seat.isEmpty
+                                  ? {
+                                      background: "#dcfce7",
+                                      borderColor: "#86efac",
+                                      color: "#166534",
+                                    }
+                                  : {
+                                      background: "#ffedd5",
+                                      borderColor: "#fdba74",
+                                      color: "#9a3412",
+                                    })
                               }}
-                              title={
-                                seat.isCurrentStudent
-                                  ? "Your assigned seat"
-                                  : `${seat.isEmpty ? "Empty" : "Occupied"} — Row ${seat.row}, Column ${seat.column}`
-                              }
+                              title={getSeatDetails(seat)}
+                              aria-label={getSeatDetails(seat)}
                             >
                               {/* Attached desktop arm-tablet pad visual line for classroom chair-table */}
                               <div style={{
@@ -364,11 +408,15 @@ export default function StudentDashboard() {
                                 right: "4px",
                                 width: "12px",
                                 height: "3px",
-                                backgroundColor: seat.isCurrentStudent ? "#93c5fd" : "#cbd5e1",
+                                backgroundColor: seat.isCurrentStudent
+                                  ? "#93c5fd"
+                                  : seat.isEmpty
+                                  ? "#86efac"
+                                  : "#fb923c",
                                 borderRadius: "2px"
                               }} />
                               <span>{seat.row},{seat.column}</span>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       ))}
@@ -384,12 +432,12 @@ export default function StudentDashboard() {
                     <span>Your Seat</span>
                   </div>
                   <div className="legend-item">
-                    <div className="legend-box" style={{ background: "#e2e8f0" }}></div>
+                    <div className="legend-box" style={{ background: "#ffedd5", border: "1px solid #fdba74" }}></div>
                     <span>Occupied</span>
                   </div>
                   <div className="legend-item">
-                    <div className="legend-box" style={{ background: "#ffffff", border: "1px solid #cbd5e1" }}></div>
-                    <span>Available</span>
+                    <div className="legend-box" style={{ background: "#dcfce7", border: "1px solid #86efac" }}></div>
+                    <span>Empty</span>
                   </div>
                 </div>
 
