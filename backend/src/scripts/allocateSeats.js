@@ -120,6 +120,7 @@ function selectCourses(
 
     const selectedCourses = availableCourses.slice(0, maxCourses);
     const K = selectedCourses.length;
+    const courseScores = {};
 
     // Generate course positions and fixed special positions.
     const {
@@ -133,6 +134,16 @@ function selectCourses(
         specialCount,
         K
     );
+
+    for (const course of selectedCourses) {
+        courseScores[course] = Array.from({ length: K }, (_, colorIndex) =>
+            calculateAllocation(
+                remainingCoursesMap[course],
+                colors[colorIndex] || [],
+                specialPositionsSet
+            )
+        );
+    }
 
     let bestPlan = null;
     let bestScore = [-1, -1];
@@ -166,11 +177,7 @@ function selectCourses(
 
             coursePositions[course] = assignedPositions;
 
-            const allocation = calculateAllocation(
-                remainingCoursesMap[course],
-                assignedPositions,
-                specialPositionsSet
-            );
+            const allocation = courseScores[course][colorIndex];
 
             totalAllocated += allocation.totalAllocated;
             totalSpecial += allocation.specialFill;
@@ -190,8 +197,58 @@ function selectCourses(
             bestPlan = {
                 coursePositions,
                 specialPositionsSet,
-                validPositions
+                validPositions,
+                score: bestScore
             };
+        }
+    }
+
+    return bestPlan;
+}
+
+function selectSections(
+    remainingSectionGroups,
+    rows,
+    cols,
+    capacity,
+    specialCount,
+    maxSections
+) {
+    const sectionsByCourse = Object.create(null);
+
+    for (const [groupKey, students] of Object.entries(remainingSectionGroups)) {
+        if (students.length === 0) continue;
+
+        const courseName = students[0].course.courseName;
+        if (!sectionsByCourse[courseName]) {
+            sectionsByCourse[courseName] = Object.create(null);
+        }
+        sectionsByCourse[courseName][groupKey] = students;
+    }
+
+    let bestPlan = null;
+    for (const [courseName, sectionGroups] of Object.entries(sectionsByCourse)) {
+        const plan = selectCourses(
+            sectionGroups,
+            rows,
+            cols,
+            capacity,
+            specialCount,
+            maxSections
+        );
+
+        if (
+            plan &&
+            (
+                !bestPlan ||
+                plan.score[0] > bestPlan.score[0] ||
+                (
+                    plan.score[0] === bestPlan.score[0] &&
+                    plan.score[1] > bestPlan.score[1]
+                )
+            )
+        ) {
+            bestPlan = { ...plan, courseName };
         }
     }
 
@@ -267,6 +324,12 @@ function placeStudents(
 
 
 function validateSeating(seatsGrid, rows, cols) {
+    const assignedCourses = new Set(
+        seatsGrid.flat().filter(Boolean).map(seat => seat.courseName)
+    );
+
+    if (assignedCourses.size < 2) return true;
+
     for (let i = 0; i < rows; i++) {
         for (let j = 0; j < cols; j++) {
             const current = seatsGrid[i][j];
@@ -305,12 +368,46 @@ function getRoomInvigilators(availableInvigilators, roomIndex, roomNumber) {
     return roomInvigilators;
 }
 
-async function runSeatingAllocation(examId, maxCoursesPerRoom = 2) {
+function groupStudentsBy(students, groupBy) {
+    const studentsByGroup = Object.create(null);
+
+    for (const student of students) {
+        const courseName = student.course?.courseName;
+        const sectionName = student.section?.trim();
+        const groupName = groupBy === "section"
+            ? courseName && sectionName
+                ? JSON.stringify([courseName, sectionName])
+                : null
+            : courseName;
+
+        if (!groupName) {
+            throw new Error(
+                `Student ${student.rollNo} has no ${groupBy === "section" ? "course or section" : "course"}. No allocation report was generated.`
+            );
+        }
+
+        if (!studentsByGroup[groupName]) studentsByGroup[groupName] = [];
+        studentsByGroup[groupName].push(student);
+    }
+
+    return studentsByGroup;
+}
+
+async function runSeatingAllocation(
+    examId,
+    maxCoursesPerRoom = 2,
+    { groupBy = "course", reportFile = "seat-allocation.txt" } = {}
+) {
     console.log("Fetching student and room details from PostgreSQL via Prisma...");
-    const reportLines = [
-        examId === undefined
+    const reportHeader = groupBy === "section"
+        ? examId === undefined
+            ? "SECTION SEAT ALLOCATION - All rooms"
+            : `SECTION SEAT ALLOCATION - Exam ID: ${examId}`
+        : examId === undefined
             ? "SEAT ALLOCATION - All rooms"
-            : `EXAM SEAT ALLOCATION - Exam ID: ${examId}`,
+            : `EXAM SEAT ALLOCATION - Exam ID: ${examId}`;
+    const reportLines = [
+        reportHeader,
         "Temporary report; allocations have not been saved to the database.",
         examId === undefined
             ? "Special seats are derived from students marked as requiring them."
@@ -323,12 +420,7 @@ async function runSeatingAllocation(examId, maxCoursesPerRoom = 2) {
         include: { course: true }
     });
 
-    const courseWithStudents = {};
-    studentsFromDb.forEach(student => {
-        const courseName = student.course.courseName;
-        if (!courseWithStudents[courseName]) courseWithStudents[courseName] = [];
-        courseWithStudents[courseName].push(student);
-    });
+    const studentsByGroup = groupStudentsBy(studentsFromDb, groupBy);
 
     let roomsToAllocate;
     if (examId === undefined) {
@@ -384,14 +476,23 @@ async function runSeatingAllocation(examId, maxCoursesPerRoom = 2) {
             capacity
         );
 
-        const plan = selectCourses(
-            courseWithStudents,
-            rows,
-            cols,
-            capacity,
-            specialSeatsCount,
-            maxCoursesPerRoom
-        );
+        const plan = groupBy === "section"
+            ? selectSections(
+                studentsByGroup,
+                rows,
+                cols,
+                capacity,
+                specialSeatsCount,
+                maxCoursesPerRoom
+            )
+            : selectCourses(
+                studentsByGroup,
+                rows,
+                cols,
+                capacity,
+                specialSeatsCount,
+                maxCoursesPerRoom
+            );
 
         if (!plan) {
             console.log("No more courses available to allocate.");
@@ -408,16 +509,16 @@ async function runSeatingAllocation(examId, maxCoursesPerRoom = 2) {
         const seatsGrid = Array.from({ length: rows }, () => Array(cols).fill(null));
         const allocatedCounts = {};
 
-        for (const [courseName, positions] of Object.entries(plan.courseProvider || plan.coursePositions)) {
+        for (const [groupName, positions] of Object.entries(plan.courseProvider || plan.coursePositions)) {
             const { remaining, allocatedCount } = placeStudents(
-                courseWithStudents[courseName],
+                studentsByGroup[groupName],
                 positions,
                 plan.specialPositionsSet,
                 seatsGrid,
-                courseName
+                groupName
             );
-            courseWithStudents[courseName] = remaining;
-            allocatedCounts[courseName] = allocatedCount;
+            studentsByGroup[groupName] = remaining;
+            allocatedCounts[groupName] = allocatedCount;
         }
 
         if (!validateSeating(seatsGrid, rows, cols)) {
@@ -439,7 +540,10 @@ async function runSeatingAllocation(examId, maxCoursesPerRoom = 2) {
                 const seats = row.map((seat, colIndex) => {
                     if (!seat) return `R${rowIndex + 1}C${colIndex + 1}: EMPTY`;
                     const specialLabel = seat.isSpecial ? " [SPECIAL]" : "";
-                    return `R${rowIndex + 1}C${colIndex + 1}: ${seat.courseName} (${seat.student.rollNo})${specialLabel}`;
+                    const groupLabel = groupBy === "section"
+                        ? `${seat.student.course.courseName} / Section ${seat.student.section}`
+                        : seat.courseName;
+                    return `R${rowIndex + 1}C${colIndex + 1}: ${groupLabel} (${seat.student.rollNo})${specialLabel}`;
                 });
                 return `Row ${rowIndex + 1}: ${seats.join(" | ")}`;
             }),
@@ -450,7 +554,7 @@ async function runSeatingAllocation(examId, maxCoursesPerRoom = 2) {
     console.log("\n========== ALLOCATION SUMMARY ==========");
     console.log(`Total Rooms Used: ${roomsUsed}`);
     console.log(`Total Students Allocated: ${totalAllocated}`);
-    const unallocatedStudents = Object.values(courseWithStudents)
+    const unallocatedStudents = Object.values(studentsByGroup)
         .reduce((total, students) => total + students.length, 0);
     console.log(`Students Not Allocated: ${unallocatedStudents}`);
     reportLines.push(
@@ -459,19 +563,59 @@ async function runSeatingAllocation(examId, maxCoursesPerRoom = 2) {
         `Total Students Allocated: ${totalAllocated}`,
         `Students Not Allocated: ${unallocatedStudents}`
     );
-    const reportPath = path.join(__dirname, "seat-allocation.txt");
+    const reportPath = path.join(__dirname, reportFile);
     await fs.writeFile(reportPath, reportLines.join("\n"), "utf8");
     console.log(`Temporary seating report saved to: ${reportPath}`);
 }
 
 if (require.main === module) {
-    const examIdInput = process.argv[2];
+    let examIdInput;
+    let maxCoursesPerRoom = 2;
+    let argumentError = null;
+    const args = process.argv.slice(2);
+
+    for (let index = 0; index < args.length; index++) {
+        const argument = args[index];
+        if (argument === "--max-courses") {
+            maxCoursesPerRoom = Number(args[index + 1]);
+            index++;
+        } else if (argument.startsWith("--max-courses=")) {
+            maxCoursesPerRoom = Number(argument.slice("--max-courses=".length));
+        } else if (argument.startsWith("--")) {
+            argumentError = `Unknown option: ${argument}`;
+            break;
+        } else if (examIdInput === undefined) {
+            examIdInput = argument;
+        } else {
+            argumentError = "Only one exam ID may be provided.";
+            break;
+        }
+    }
+
     const examId = examIdInput === undefined ? undefined : Number(examIdInput);
-    if (examIdInput !== undefined && (!Number.isInteger(examId) || examId <= 0)) {
-        console.error("Exam ID must be a positive integer.");
+    if (
+        argumentError ||
+        (examIdInput !== undefined && (!Number.isInteger(examId) || examId <= 0)) ||
+        !Number.isInteger(maxCoursesPerRoom) ||
+        maxCoursesPerRoom < 1 ||
+        maxCoursesPerRoom > 5
+    ) {
+        if (argumentError) {
+            console.error(argumentError);
+        }
+        if (!Number.isInteger(maxCoursesPerRoom) || maxCoursesPerRoom < 1 || maxCoursesPerRoom > 5) {
+            console.error("Maximum courses per room must be an integer from 1 to 5.");
+        }
+        if (examIdInput !== undefined && (!Number.isInteger(examId) || examId <= 0)) {
+            console.error("Exam ID must be a positive integer.");
+        }
+        console.error("Usage: node allocateSeats.js [examId] [--max-courses=1..5]");
         process.exitCode = 1;
+        prisma.$disconnect().catch(error => {
+            console.error("Unable to close Prisma after invalid allocation options:", error);
+        });
     } else {
-        runSeatingAllocation(examId)
+        runSeatingAllocation(examId, maxCoursesPerRoom)
             .catch(e => {
                 console.error(e);
                 process.exitCode = 1;
@@ -485,7 +629,11 @@ if (require.main === module) {
 module.exports = {
     createPositions,
     selectCourses,
+    selectSections,
     placeStudents,
     validateSeating,
-    getRoomInvigilators
+    getRoomInvigilators,
+    groupStudentsBy,
+    runSeatingAllocation,
+    disconnectPrisma: () => prisma.$disconnect()
 };

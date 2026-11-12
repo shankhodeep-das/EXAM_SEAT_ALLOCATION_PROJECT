@@ -124,6 +124,9 @@ export default function StudentDashboard() {
   const seatCode = studentSeat
     ? `R${studentSeat.row}C${studentSeat.column}`
     : "Not assigned";
+  const allocationLabel = dashboard?.allocationMode === "section"
+    ? "Course / section"
+    : "Course";
 
   const getSeatDetails = (seat) => {
     if (seat.isEmpty) {
@@ -133,7 +136,7 @@ export default function StudentDashboard() {
     return [
       seat.isCurrentStudent ? "Your seat" : "Occupied seat",
       `Row ${seat.row}, Column ${seat.column}`,
-      seat.courseName && `Course: ${seat.courseName}`,
+      seat.allocationGroup && `${allocationLabel}: ${seat.allocationGroup}`,
       seat.rollNo && `Roll No: ${seat.rollNo}`,
       seat.isSpecial && "Special seat",
     ]
@@ -298,6 +301,9 @@ export default function StudentDashboard() {
                 <h2 className="dash-panel-title" style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: "14px", marginBottom: "16px", fontSize: "1.05rem" }}>
                   <MapPin className="w-5 h-5 text-blue-600" />
                   <span>Room Seating Map</span>
+                  <span style={{ marginLeft: "auto", padding: "5px 9px", borderRadius: "8px", color: "#1d4ed8", background: "#eff6ff", fontSize: "10px", fontWeight: 750 }}>
+                    {allocationLabel} arrangement
+                  </span>
                 </h2>
 
                 <div className="hall-header-banner">

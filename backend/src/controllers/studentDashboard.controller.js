@@ -1,6 +1,8 @@
-const fs = require("fs/promises");
-const path = require("path");
 const prisma = require("../config/prisma");
+const {
+  getStudentAllocationMode,
+  readAllocationReport,
+} = require("../utils/studentAllocationMode");
 
 exports.getStudentDashboard = async (req, res) => {
   try {
@@ -21,8 +23,8 @@ exports.getStudentDashboard = async (req, res) => {
       return res.status(404).json({ message: "Student profile not found" });
     }
 
-    const reportPath = path.join(__dirname, "..", "scripts", "seat-allocation.txt");
-    const report = await fs.readFile(reportPath, "utf8");
+    const allocationMode = await getStudentAllocationMode(prisma);
+    const { report } = await readAllocationReport(allocationMode);
     const rooms = [];
     let currentRoom = null;
 
@@ -74,15 +76,17 @@ exports.getStudentDashboard = async (req, res) => {
         const rollNoMatch = seatText.match(/\((BWU\/[^)]+)\)/);
         const rollNo = rollNoMatch ? rollNoMatch[1] : null;
         const isEmpty = seatText === "EMPTY";
-        const courseName = rollNoMatch
+        const groupName = rollNoMatch
           ? seatText.slice(0, rollNoMatch.index).trim()
           : null;
+        const allocationGroup = groupName;
 
         rowSeats.push({
           row,
           column,
           isEmpty,
-          courseName,
+          courseName: allocationMode === "course" ? groupName : null,
+          allocationGroup,
           rollNo,
           isSpecial: /\[SPECIAL\]/.test(seatText),
           isCurrentStudent: rollNo === user.student.rollNo,
@@ -105,6 +109,7 @@ exports.getStudentDashboard = async (req, res) => {
     }
 
     return res.status(200).json({
+      allocationMode,
       student: {
         fullName: user.student.fullName,
         rollNo: user.student.rollNo,
@@ -116,6 +121,10 @@ exports.getStudentDashboard = async (req, res) => {
       room,
     });
   } catch (error) {
+    if (error.code === "ALLOCATION_REPORT_UNAVAILABLE") {
+      return res.status(503).json({ message: error.message });
+    }
+
     console.error("Student dashboard data error:", error);
     return res.status(500).json({
       message: "Unable to load student dashboard data",

@@ -25,11 +25,14 @@ import {
 import { apiRequest } from "@/lib/api";
 import YourExamRooms from "../room/YourExamRooms";
 import AddBuildings from "../room/AddBuildings";
+import RoomMatrixConfig from "../room/RoomMatrixConfig";
+import StudentSeatLookup from "../student/StudentSeatLookup";
 
 export default function StaffDashboard() {
   const router = useRouter();
   const { setUser } = useAuth();
   const [dashboard, setDashboard] = useState(null);
+  const [dashboardRefresh, setDashboardRefresh] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("Dashboard");
@@ -74,7 +77,7 @@ export default function StaffDashboard() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [router, dashboardRefresh]);
 
   useEffect(() => {
     if (!profileCardOpen) return undefined;
@@ -151,7 +154,11 @@ export default function StaffDashboard() {
   const profile = dashboard?.user;
   const staffMembers = dashboard?.staffMembers || [];
   const isAdmin = profile?.roleGroup === "ADMIN";
+  const canChangeStudentDisplay = isAdmin || profile?.role === "EXAM_OFFICER";
   const canManageBuildings = isAdmin || profile?.role === "EXAM_OFFICER";
+  const canSearchStudentSeats = isAdmin ||
+    profile?.staffType === "FACULTY" ||
+    profile?.role === "EXAM_OFFICER";
   const rolePower = isAdmin ? 3 : 2;
   const roleLabel = profile?.role || (isAdmin ? "Administrator" : "Staff");
   const RoleBadgeIcon = isAdmin ? ShieldAlert : Award;
@@ -168,8 +175,12 @@ export default function StaffDashboard() {
     ...(canManageBuildings
       ? [{ name: "ADD", icon: Building2, requiredPower: 1 }]
       : []),
-    { name: "Student Management", icon: Users, requiredPower: 2 },
-    { name: "Room Matrix Config", icon: Building2, requiredPower: 3 },
+    ...(canSearchStudentSeats
+      ? [{ name: "Student Management", icon: Users, requiredPower: 2 }]
+      : []),
+    ...(canChangeStudentDisplay
+      ? [{ name: "Room Matrix Config", icon: Building2, requiredPower: isAdmin ? 3 : 2 }]
+      : []),
     { name: "System Settings", icon: Settings, requiredPower: 3 },
     { name: "Help & Support", icon: HelpCircle, requiredPower: 1 },
   ];
@@ -222,7 +233,7 @@ export default function StaffDashboard() {
                       type="button"
                       key={item.name}
                       onClick={() => {
-                        if (!isLocked && ["Dashboard", "Exam Room", "ADD"].includes(item.name)) {
+                        if (!isLocked && ["Dashboard", "Exam Room", "ADD", "Student Management", "Room Matrix Config"].includes(item.name)) {
                           setActiveSection(item.name);
                         }
                       }}
@@ -467,9 +478,22 @@ export default function StaffDashboard() {
                 <YourExamRooms
                   rooms={isAdmin ? dashboard?.adminRooms || [] : dashboard?.assignedRooms || []}
                   adminView={isAdmin}
+                  allocationMode={dashboard?.allocationMode || "course"}
+                  canDownloadInvigilationPdf={
+                    !isAdmin &&
+                    profile?.roleGroup === "STAFF" &&
+                    profile?.staffType === "FACULTY"
+                  }
                 />
               ) : activeSection === "ADD" ? (
                 <AddBuildings />
+              ) : activeSection === "Student Management" ? (
+                <StudentSeatLookup />
+              ) : activeSection === "Room Matrix Config" ? (
+                <RoomMatrixConfig
+                  canRunAllocations={isAdmin}
+                  onDashboardRefresh={() => setDashboardRefresh((current) => current + 1)}
+                />
               ) : (
                 <>
               <section className="dash-panel" style={{ padding: "20px" }}>

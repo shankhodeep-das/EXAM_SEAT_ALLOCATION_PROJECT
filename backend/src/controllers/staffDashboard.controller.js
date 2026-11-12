@@ -1,79 +1,9 @@
-const fs = require("fs/promises");
-const path = require("path");
 const prisma = require("../config/prisma");
-
-function parseAllocationRooms(report) {
-  const rooms = [];
-  let currentRoom = null;
-
-  for (const line of report.split(/\r?\n/)) {
-    const roomMatch = line.match(/^Room:\s*(.*?)\s+-\s+(.+?)\s*$/);
-    if (roomMatch) {
-      if (currentRoom) rooms.push(currentRoom);
-
-      currentRoom = {
-        building: roomMatch[1],
-        roomNumber: roomMatch[2],
-        invigilators: [],
-        allocatedStudents: 0,
-        rows: [],
-      };
-      continue;
-    }
-
-    if (!currentRoom) continue;
-
-    const invigilatorsMatch = line.match(/^Invigilators:\s*(.*?)\s*$/);
-    if (invigilatorsMatch) {
-      currentRoom.invigilators = invigilatorsMatch[1]
-        .split(/\s+\|\s+/)
-        .filter(Boolean)
-        .map((entry) => {
-          const facultyMatch = entry.match(/^(.*?)\s+\(([^()]*)\)$/);
-          return facultyMatch
-            ? { fullName: facultyMatch[1], employeeId: facultyMatch[2] }
-            : { fullName: entry, employeeId: null };
-        });
-      continue;
-    }
-
-    const allocatedMatch = line.match(/^Allocated students:\s*(\d+)\s*$/);
-    if (allocatedMatch) {
-      currentRoom.allocatedStudents = Number(allocatedMatch[1]);
-      continue;
-    }
-
-    if (!/^Row\s+\d+:/i.test(line)) continue;
-
-    const rowSeats = [];
-    for (const match of line.matchAll(
-      /R(\d+)C(\d+):\s*(.*?)(?=\s+\|\s+R\d+C\d+:|$)/g
-    )) {
-      const row = Number(match[1]);
-      const column = Number(match[2]);
-      const seatText = match[3].trim();
-      const rollNoMatch = seatText.match(/\((BWU\/[^)]+)\)/);
-      const rollNo = rollNoMatch ? rollNoMatch[1] : null;
-
-      rowSeats.push({
-        row,
-        column,
-        isEmpty: seatText === "EMPTY",
-        courseName: rollNoMatch
-          ? seatText.slice(0, rollNoMatch.index).trim()
-          : null,
-        rollNo,
-        isSpecial: /\[SPECIAL\]/.test(seatText),
-      });
-    }
-
-    if (rowSeats.length > 0) currentRoom.rows.push(rowSeats);
-  }
-
-  if (currentRoom) rooms.push(currentRoom);
-
-  return rooms;
-}
+const { parseAllocationRooms } = require("../utils/seatAllocationReport");
+const {
+  getStudentAllocationMode,
+  readAllocationReport,
+} = require("../utils/studentAllocationMode");
 
 function parseEmptySeatReport(report) {
   const rooms = new Map();
@@ -120,37 +50,19 @@ function parseAssignedRooms(report, employeeId) {
   );
 }
 
-async function getAssignedRooms(employeeId) {
-  if (!employeeId) return [];
-
-  const reportPath = path.join(__dirname, "..", "scripts", "seat-allocation.txt");
-  const report = await fs.readFile(reportPath, "utf8");
+function getAssignedRooms(employeeId, report) {
   return parseAssignedRooms(report, employeeId);
 }
 
-async function getAdminRooms() {
-  const scriptsPath = path.join(__dirname, "..", "scripts");
-  const [allocationReport, emptySeatReport] = await Promise.all([
-    fs.readFile(path.join(scriptsPath, "seat-allocation.txt"), "utf8"),
-    fs.readFile(path.join(scriptsPath, "empty-seat-report.txt"), "utf8"),
-  ]);
-  const emptySeatsByRoom = parseEmptySeatReport(emptySeatReport);
-
-  return parseAllocationRooms(allocationReport).map((room) => {
-    const reportRoom = emptySeatsByRoom.get(`${room.building}\u0000${room.roomNumber}`);
-    const emptyPositions = new Set(
-      (reportRoom?.emptySeatPositions || []).map(({ row, column }) => `${row},${column}`)
-    );
-
+function getAdminRooms(report) {
+  return parseAllocationRooms(report).map((room) => {
+    const emptySeatPositions = room.rows
+      .flat()
+      .filter((seat) => seat.isEmpty)
+      .map(({ row, column }) => ({ row, column }));
     return {
       ...room,
-      emptySeatPositions: reportRoom?.emptySeatPositions || [],
-      rows: room.rows.map((row) =>
-        row.map((seat) => ({
-          ...seat,
-          isEmpty: emptyPositions.has(`${seat.row},${seat.column}`),
-        }))
-      ),
+      emptySeatPositions,
     };
   });
 }
@@ -180,6 +92,9 @@ exports.getStaffDashboard = async (req, res) => {
     if (!user || !user.isActive) {
       return res.status(404).json({ message: "Official account not found" });
     }
+
+    const allocationMode = await getStudentAllocationMode(prisma);
+    const { report } = await readAllocationReport(allocationMode);
 
     let staffMembers = [];
     if (user.role.roleGroup === "ADMIN") {
@@ -216,13 +131,14 @@ exports.getStaffDashboard = async (req, res) => {
     }
 
     const assignedRooms = user.role.roleGroup === "STAFF"
-      ? await getAssignedRooms(user.faculty?.employeeId)
+      ? getAssignedRooms(user.faculty?.employeeId, report)
       : [];
     const adminRooms = user.role.roleGroup === "ADMIN"
-      ? await getAdminRooms()
+      ? getAdminRooms(report)
       : [];
 
     return res.status(200).json({
+      allocationMode,
       user: {
         fullName: user.faculty?.fullName || null,
         employeeId: user.faculty?.employeeId || null,
@@ -238,6 +154,10 @@ exports.getStaffDashboard = async (req, res) => {
       adminRooms,
     });
   } catch (error) {
+    if (error.code === "ALLOCATION_REPORT_UNAVAILABLE") {
+      return res.status(503).json({ message: error.message });
+    }
+
     console.error("Staff dashboard data error:", error);
     return res.status(500).json({
       message: "Unable to load staff dashboard data",

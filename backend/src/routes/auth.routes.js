@@ -19,6 +19,9 @@ const {
   getStaffDashboard,
 } = require("../controllers/staffDashboard.controller");
 const {
+  getStaffInvigilationReport,
+} = require("../controllers/staffInvigilationReport.controller");
+const {
   authenticates,
 } = require("../middleware/auth.middleware");
 
@@ -31,6 +34,7 @@ router.get("/me", authenticates, (req, res) => {
 
 router.get("/student/dashboard", authenticates, getStudentDashboard);
 router.get("/staff/dashboard", authenticates, getStaffDashboard);
+router.get("/staff/invigilation-report.pdf", authenticates, getStaffInvigilationReport);
 router.post("/students/login", studentLogin);
 router.put("/student/password", authenticates, updateStudentPassword);
 router.put("/staff/password", authenticates, updateStaffPassword);

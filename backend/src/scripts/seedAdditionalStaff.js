@@ -101,8 +101,8 @@ async function main() {
     const staffToCreate = [];
 
     // Generate 1,000 faculty members.
-    for (let i = 1335; i <= 1701; i++) {
-        const index = i - 1335;
+    for (let i = 1701; i <= 1801; i++) {
+        const index = i - 1701;
 
         const fullName =
             `${firstNames[index % firstNames.length]} ` +

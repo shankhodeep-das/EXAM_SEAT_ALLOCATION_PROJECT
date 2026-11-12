@@ -1,16 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, MapPin, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, MapPin, Search } from "lucide-react";
+import { downloadPdf } from "@/lib/api";
 
-function getSeatDetails(seat) {
+function getSeatDetails(seat, allocationMode) {
   if (seat.isEmpty) {
     return `Empty seat — Row ${seat.row}, Column ${seat.column}`;
   }
 
+  const groupLabel = allocationMode === "section"
+    ? "Course / section"
+    : "Course";
+
   return [
     `Occupied seat — Row ${seat.row}, Column ${seat.column}`,
-    seat.courseName && `Course: ${seat.courseName}`,
+    seat.courseName && `${groupLabel}: ${seat.courseName}`,
     seat.rollNo && `Roll No: ${seat.rollNo}`,
     seat.isSpecial && "Special seat",
   ]
@@ -18,11 +23,38 @@ function getSeatDetails(seat) {
     .join("\n");
 }
 
-export default function YourExamRooms({ rooms, adminView = false }) {
+export default function YourExamRooms({
+  rooms,
+  adminView = false,
+  allocationMode = "course",
+  canDownloadInvigilationPdf = false,
+}) {
   const [roomSearch, setRoomSearch] = useState("");
   const [roomFilter, setRoomFilter] = useState("all");
   const [page, setPage] = useState(0);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
   const pageSize = 4;
+
+  const handleDownloadPdf = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setDownloadError("Your session has expired. Please sign in again.");
+      return;
+    }
+
+    setDownloadError("");
+    setDownloadingPdf(true);
+    try {
+      await downloadPdf("/api/auth/staff/invigilation-report.pdf", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (error) {
+      setDownloadError(error.message || "Unable to download the invigilation PDF.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const visibleRooms = useMemo(() => {
     const normalizedSearch = roomSearch.trim().toLowerCase();
@@ -52,11 +84,46 @@ export default function YourExamRooms({ rooms, adminView = false }) {
           paddingBottom: "12px",
           marginBottom: "14px",
           fontSize: "1rem",
+          flexWrap: "wrap",
+          gap: "8px",
         }}
       >
         <MapPin className="w-4 h-4 text-blue-600" />
         <span>{adminView ? "Exam Rooms" : "Your Exam Room"}</span>
+        <span style={{ marginLeft: "auto", padding: "5px 9px", borderRadius: "8px", color: "#1d4ed8", background: "#eff6ff", fontSize: "10px", fontWeight: 750 }}>
+          {allocationMode === "section" ? "Section arrangement" : "Course arrangement"}
+        </span>
+        {canDownloadInvigilationPdf && (
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+            aria-label="Download invigilation assignments as PDF"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              padding: "7px 10px",
+              border: "1px solid #bfdbfe",
+              borderRadius: "9px",
+              color: "#1d4ed8",
+              background: "#fff",
+              fontSize: "11px",
+              fontWeight: 750,
+              cursor: downloadingPdf ? "wait" : "pointer",
+              opacity: downloadingPdf ? 0.7 : 1,
+            }}
+          >
+            <Download size={14} />
+            {downloadingPdf ? "Preparing PDF..." : "Download PDF"}
+          </button>
+        )}
       </h2>
+      {downloadError && (
+        <p role="alert" style={{ margin: "0 0 14px", color: "#b91c1c", fontSize: "12px" }}>
+          {downloadError}
+        </p>
+      )}
 
       {adminView && (
         <div
@@ -213,8 +280,8 @@ export default function YourExamRooms({ rooms, adminView = false }) {
                       {row.map((seat) => (
                         <div
                           key={`${seat.row}-${seat.column}`}
-                          title={getSeatDetails(seat)}
-                          aria-label={getSeatDetails(seat)}
+                          title={getSeatDetails(seat, allocationMode)}
+                          aria-label={getSeatDetails(seat, allocationMode)}
                           style={{
                             width: "56px",
                             height: "46px",
@@ -253,7 +320,9 @@ export default function YourExamRooms({ rooms, adminView = false }) {
               >
                 <span><span style={{ color: "#c2410c" }}>■</span> Occupied</span>
                 <span><span style={{ color: "#15803d" }}>■</span> Empty</span>
-                <span>Hover a seat for course and roll number</span>
+                <span>
+                  Hover a seat for {allocationMode === "section" ? "course, section, and" : "course and"} roll number
+                </span>
               </div>
             </article>
           ))}

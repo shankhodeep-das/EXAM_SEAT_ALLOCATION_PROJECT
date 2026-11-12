@@ -18,10 +18,14 @@ app.use(express.json());
 
 const authRoutes = require("./routes/auth.routes");
 const buildingRoutes = require("./routes/building.routes");
+const studentSeatLookupRoutes = require("./routes/studentSeatLookup.routes");
+const roomMatrixRoutes = require("./routes/roomMatrix.routes");
 
 app.use("/api", authRoutes);
 app.use("/api", authRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/buildings", buildingRoutes);
+app.use("/api/staff/students", studentSeatLookupRoutes);
+app.use("/api/admin/room-matrix", roomMatrixRoutes);
 
 module.exports = app;
