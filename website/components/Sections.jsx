@@ -176,7 +176,7 @@ export function Download() {
               for Android and iOS.
             </p>
             <div className="store-row">
-              <a href="/download" className="store">
+              <a href="https://github.com/shankhodeep-das/EXAM_SEAT_ALLOCATION_PROJECT/releases/latest/download/SeatWise.apk" className="store">
                 <DownloadIcon size={20} />
                 <span>
                   <small>Download for</small>

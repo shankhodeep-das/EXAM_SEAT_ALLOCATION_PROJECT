@@ -17,9 +17,11 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 const authRoutes = require("./routes/auth.routes");
+const buildingRoutes = require("./routes/building.routes");
 
 app.use("/api", authRoutes);
 app.use("/api", authRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/buildings", buildingRoutes);
 
 module.exports = app;

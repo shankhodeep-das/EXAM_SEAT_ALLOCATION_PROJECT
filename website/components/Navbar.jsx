@@ -30,7 +30,7 @@ export default function Navbar() {
           <a href="/guide" className="nav-link-quiet">
             Guide
           </a>
-          <a href="/download" className="btn btn-outline">
+          <a href="https://github.com/shankhodeep-das/EXAM_SEAT_ALLOCATION_PROJECT/releases/latest/download/SeatWise.apk" className="btn btn-outline">
             Download app
           </a>
           <a href="/login" className="btn btn-primary">

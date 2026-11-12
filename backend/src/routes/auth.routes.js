@@ -9,6 +9,8 @@ const {
 const {
   studentLogin,
   staffLogin,
+  updateStudentPassword,
+  updateStaffPassword,
 } = require("../controllers/auth.controller");
 const {
   getStudentDashboard,
@@ -30,6 +32,8 @@ router.get("/me", authenticates, (req, res) => {
 router.get("/student/dashboard", authenticates, getStudentDashboard);
 router.get("/staff/dashboard", authenticates, getStaffDashboard);
 router.post("/students/login", studentLogin);
+router.put("/student/password", authenticates, updateStudentPassword);
+router.put("/staff/password", authenticates, updateStaffPassword);
 router.post("/staff/login", staffLogin);
 
 module.exports = router;

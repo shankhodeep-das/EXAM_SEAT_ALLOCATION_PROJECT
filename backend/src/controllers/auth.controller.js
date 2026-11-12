@@ -117,6 +117,143 @@ exports.studentLogin = async (req, res) => {
   }
 };
 
+exports.updateStudentPassword = async (req, res) => {
+  try {
+    if (req.user.roleGroup !== "STUDENT") {
+      return res.status(403).json({
+        message: "Student access required",
+      });
+    }
+
+    const { currentPassword, newPassword } = req.body || {};
+    if (
+      typeof currentPassword !== "string" ||
+      typeof newPassword !== "string" ||
+      currentPassword.length === 0 ||
+      newPassword.length < 8 ||
+      Buffer.byteLength(newPassword, "utf8") > 72
+    ) {
+      return res.status(400).json({
+        message: "Enter your current password and a new password of 8 to 72 characters",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        student: {
+          select: {
+            rollNo: true,
+            password: true,
+          },
+        },
+      },
+    });
+
+    if (!user?.student) {
+      return res.status(404).json({
+        message: "Student account not found",
+      });
+    }
+
+    const currentPasswordMatches = await bcrypt.compare(
+      currentPassword,
+      user.student.password
+    );
+    if (!currentPasswordMatches) {
+      return res.status(400).json({
+        message: "Current password is incorrect",
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        message: "Choose a new password different from your current password",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await prisma.student.update({
+      where: { rollNo: user.student.rollNo },
+      data: { password: passwordHash },
+    });
+
+    return res.status(200).json({
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.error("Student password update error:", error);
+    return res.status(500).json({
+      message: "Unable to update password",
+    });
+  }
+};
+
+exports.updateStaffPassword = async (req, res) => {
+  try {
+    if (!["STAFF", "ADMIN"].includes(req.user.roleGroup)) {
+      return res.status(403).json({
+        message: "Official access required",
+      });
+    }
+
+    const { currentPassword, newPassword } = req.body || {};
+    if (
+      typeof currentPassword !== "string" ||
+      typeof newPassword !== "string" ||
+      currentPassword.length === 0 ||
+      newPassword.length < 8 ||
+      Buffer.byteLength(newPassword, "utf8") > 72
+    ) {
+      return res.status(400).json({
+        message: "Enter your current password and a new password of 8 to 72 characters",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { passwordHash: true },
+    });
+
+    if (!user?.passwordHash) {
+      return res.status(404).json({
+        message: "Official account password is unavailable",
+      });
+    }
+
+    const currentPasswordMatches = await bcrypt.compare(
+      currentPassword,
+      user.passwordHash
+    );
+    if (!currentPasswordMatches) {
+      return res.status(400).json({
+        message: "Current password is incorrect",
+      });
+    }
+
+    if (await bcrypt.compare(newPassword, user.passwordHash)) {
+      return res.status(400).json({
+        message: "Choose a new password different from your current password",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { passwordHash },
+    });
+
+    return res.status(200).json({
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.error("Official password update error:", error);
+    return res.status(500).json({
+      message: "Unable to update password",
+    });
+  }
+};
+
 
 
 // FACULTY / OFFICIAL / ADMIN LOGIN

@@ -12,6 +12,9 @@ import {
   BookOpen,
   Mail,
   DoorOpen,
+  KeyRound,
+  X,
+  ShieldCheck,
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -22,6 +25,15 @@ export default function StudentDashboard() {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [passwordUpdated, setPasswordUpdated] = useState(false);
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
 
   useEffect(() => {
     let active = true;
@@ -58,6 +70,51 @@ export default function StudentDashboard() {
     localStorage.removeItem("user");
     setUser(null);
     router.replace("/");
+  };
+
+  const closePasswordDialog = () => {
+    if (passwordSubmitting) return;
+    setPasswordDialogOpen(false);
+    setPasswordUpdated(false);
+    setPasswordError("");
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+  };
+
+  const handlePasswordUpdate = async (event) => {
+    event.preventDefault();
+    setPasswordError("");
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("The new password and confirmation do not match.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setPasswordError("Your session has expired. Please sign in again.");
+      return;
+    }
+
+    setPasswordSubmitting(true);
+    try {
+      await apiRequest("/api/auth/student/password", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
+      });
+      setPasswordUpdated(true);
+    } catch (requestError) {
+      setPasswordError(requestError.message || "Unable to update your password.");
+    } finally {
+      setPasswordSubmitting(false);
+    }
   };
 
   const student = dashboard?.student;
@@ -448,7 +505,120 @@ export default function StudentDashboard() {
               </div>
 
             </div>
+
+            <section className="dash-panel" style={{ marginTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "18px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ width: "44px", height: "44px", borderRadius: "14px", display: "grid", placeItems: "center", color: "#1d4ed8", background: "#eff6ff", border: "1px solid #dbeafe" }}>
+                  <ShieldCheck size={22} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a", margin: 0 }}>Account security</h2>
+                  <p style={{ color: "#64748b", fontSize: "13px", margin: "4px 0 0" }}>Keep your student account protected with a strong password.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setPasswordUpdated(false);
+                  setPasswordError("");
+                  setPasswordDialogOpen(true);
+                }}
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "9px", padding: "12px 18px", border: "1px solid #1d4ed8", borderRadius: "12px", color: "#fff", background: "linear-gradient(135deg, #2563eb, #1d4ed8)", fontWeight: 750, fontSize: "13px", cursor: "pointer", boxShadow: "0 6px 16px rgba(37, 99, 235, 0.22)", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.transform = "translateY(-1px)";
+                  event.currentTarget.style.boxShadow = "0 9px 20px rgba(37, 99, 235, 0.3)";
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.transform = "translateY(0)";
+                  event.currentTarget.style.boxShadow = "0 6px 16px rgba(37, 99, 235, 0.22)";
+                }}
+              >
+                <KeyRound size={16} />
+                Update Password
+              </button>
+            </section>
           </>
+        )}
+
+        {passwordDialogOpen && (
+          <div
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) closePasswordDialog();
+            }}
+            style={{ position: "fixed", inset: 0, zIndex: 1000, display: "grid", placeItems: "center", padding: "20px", background: "rgba(15, 23, 42, 0.55)", backdropFilter: "blur(5px)" }}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="password-dialog-title"
+              className="dash-panel"
+              style={{ width: "min(100%, 440px)", padding: "28px", position: "relative", boxShadow: "0 24px 70px rgba(15, 23, 42, 0.24)" }}
+            >
+              <button
+                type="button"
+                onClick={closePasswordDialog}
+                disabled={passwordSubmitting}
+                aria-label="Close password update dialog"
+                style={{ position: "absolute", top: "16px", right: "16px", width: "34px", height: "34px", display: "grid", placeItems: "center", border: "1px solid #e2e8f0", borderRadius: "10px", color: "#64748b", background: "#fff", cursor: passwordSubmitting ? "not-allowed" : "pointer" }}
+              >
+                <X size={17} />
+              </button>
+
+              {passwordUpdated ? (
+                <div style={{ textAlign: "center", padding: "14px 4px 4px" }} role="status" aria-live="polite">
+                  <div style={{ width: "58px", height: "58px", margin: "0 auto 16px", borderRadius: "50%", display: "grid", placeItems: "center", color: "#15803d", background: "#dcfce7" }}>
+                    <ShieldCheck size={30} />
+                  </div>
+                  <h2 id="password-dialog-title" style={{ fontSize: "21px", fontWeight: 850, color: "#0f172a", marginBottom: "8px" }}>Password updated</h2>
+                  <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "22px" }}>Your new password has been saved securely.</p>
+                  <button type="button" onClick={closePasswordDialog} className="login-submit-btn" style={{ marginTop: 0 }}>Done</button>
+                </div>
+              ) : (
+                <>
+                  <div style={{ marginBottom: "22px", paddingRight: "28px" }}>
+                    <div style={{ width: "42px", height: "42px", marginBottom: "14px", borderRadius: "13px", display: "grid", placeItems: "center", color: "#1d4ed8", background: "#eff6ff" }}>
+                      <KeyRound size={20} />
+                    </div>
+                    <h2 id="password-dialog-title" style={{ fontSize: "21px", fontWeight: 850, color: "#0f172a", marginBottom: "7px" }}>Update your password</h2>
+                    <p style={{ color: "#64748b", fontSize: "13px" }}>Enter your current password, then choose a new one.</p>
+                  </div>
+
+                  <form onSubmit={handlePasswordUpdate} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                    {[
+                      ["currentPassword", "Current password", "Enter your current password"],
+                      ["newPassword", "New password", "At least 8 characters"],
+                      ["confirmPassword", "Confirm new password", "Re-enter your new password"],
+                    ].map(([field, label, placeholder]) => (
+                      <label key={field} style={{ display: "flex", flexDirection: "column", gap: "6px", color: "#334155", fontSize: "12px", fontWeight: 700 }}>
+                        {label}
+                        <input
+                          type="password"
+                          required
+                          minLength={field === "currentPassword" ? undefined : 8}
+                          maxLength={72}
+                          autoComplete={field === "currentPassword" ? "current-password" : "new-password"}
+                          value={passwordForm[field]}
+                          onChange={(event) => setPasswordForm((form) => ({ ...form, [field]: event.target.value }))}
+                          placeholder={placeholder}
+                          style={{ width: "100%", padding: "12px 13px", borderRadius: "11px", border: "1px solid #cbd5e1", outline: "none", background: "#fff", color: "#0f172a", fontSize: "14px" }}
+                        />
+                      </label>
+                    ))}
+
+                    {passwordError && (
+                      <div role="alert" style={{ padding: "10px 12px", borderRadius: "10px", color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", fontSize: "13px" }}>
+                        {passwordError}
+                      </div>
+                    )}
+
+                    <button type="submit" disabled={passwordSubmitting} className="login-submit-btn" style={{ marginTop: "4px", opacity: passwordSubmitting ? 0.7 : 1, cursor: passwordSubmitting ? "wait" : "pointer" }}>
+                      {passwordSubmitting ? "Updating password..." : "Save New Password"}
+                    </button>
+                  </form>
+                </>
+              )}
+            </section>
+          </div>
         )}
 
         <div className="cs-footer" style={{ marginTop: "40px" }}>
