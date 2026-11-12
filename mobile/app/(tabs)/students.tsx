@@ -1,5 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { useMemo, useState } from "react";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import {
   ActivityIndicator,
   Pressable,
@@ -36,10 +38,15 @@ export default function ExamRoomScreen() {
   const [search, setSearch] = useState("");
   const [emptyOnly, setEmptyOnly] = useState(false);
   const [page, setPage] = useState(0);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState("");
   const [selectedSeat, setSelectedSeat] = useState<{ room: string; row: number; column: number } | null>(null);
 
   const isStudent = dashboard ? "student" in dashboard : user?.roleGroup === "STUDENT";
   const isAdmin = dashboard && "user" in dashboard && dashboard.user.roleGroup === "ADMIN";
+  const isFaculty = dashboard && "user" in dashboard &&
+    dashboard.user.roleGroup === "STAFF" &&
+    dashboard.user.staffType?.toUpperCase() === "FACULTY";
 
   const allRooms = useMemo(() => {
     if (!dashboard) return [];
@@ -70,6 +77,41 @@ export default function ExamRoomScreen() {
   const updateEmptyOnly = (value: boolean) => {
     setEmptyOnly(value);
     setPage(0);
+  };
+
+  const shareInvigilationPdf = async () => {
+    if (!allRooms.length) {
+      setPdfError("No invigilation assignments are available to export.");
+      return;
+    }
+
+    setPdfBusy(true);
+    setPdfError("");
+    try {
+      const allocationMode = dashboard && "allocationMode" in dashboard
+        ? dashboard.allocationMode
+        : "course";
+      const official = dashboard && "user" in dashboard ? dashboard.user : null;
+      const html = buildInvigilationHtml(
+        allRooms,
+        allocationMode,
+        official?.fullName || user?.fullName || "Faculty member",
+        official?.employeeId || user?.employeeId || ""
+      );
+      const file = await Print.printToFileAsync({ html });
+      if (!await Sharing.isAvailableAsync()) {
+        throw new Error("PDF sharing is not available on this device.");
+      }
+      await Sharing.shareAsync(file.uri, {
+        mimeType: "application/pdf",
+        dialogTitle: "Save or share invigilation assignments",
+        UTI: "com.adobe.pdf",
+      });
+    } catch (error) {
+      setPdfError(error instanceof Error ? error.message : "Unable to prepare the invigilation PDF.");
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
   if (!user) {
@@ -112,6 +154,26 @@ export default function ExamRoomScreen() {
           </View>
           <View style={styles.countPill}><Text style={styles.countText}>{allRooms.length} {allRooms.length === 1 ? "ROOM" : "ROOMS"}</Text></View>
         </View>
+
+        {dashboard && "allocationMode" in dashboard && (
+          <Text style={styles.modeLabel}>
+            STUDENT SEATING VIEW · {dashboard.allocationMode.toUpperCase()} ARRANGEMENT
+          </Text>
+        )}
+
+        {isFaculty && (
+          <Pressable
+            accessibilityRole="button"
+            disabled={pdfBusy}
+            onPress={shareInvigilationPdf}
+            style={({ pressed }) => [styles.pdfButton, pressed && styles.buttonPressed, pdfBusy && styles.buttonDisabled]}
+          >
+            {pdfBusy
+              ? <ActivityIndicator color={COLORS.background} />
+              : <Text style={styles.pdfButtonText}>Download / share invigilation PDF</Text>}
+          </Pressable>
+        )}
+        {!!pdfError && <Text accessibilityRole="alert" style={styles.errorText}>{pdfError}</Text>}
 
         {!!dashboardError && (
           <View style={styles.errorCard}>
@@ -344,11 +406,66 @@ function getEmptyPositions(room: ExamRoom) {
     .map(({ row, column }) => ({ row, column }));
 }
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;",
+  })[character] || character);
+}
+
+function buildInvigilationHtml(
+  rooms: ExamRoom[],
+  mode: "course" | "section",
+  fullName: string,
+  employeeId: string
+) {
+  const roomRows = rooms.map((room) => {
+    const groups = [...new Set(room.rows.flat()
+      .filter((seat) => !seat.isEmpty && seat.courseName)
+      .map((seat) => seat.courseName as string))];
+    return `<tr>
+      <td>${escapeHtml(room.building)}</td>
+      <td>${escapeHtml(room.roomNumber)}</td>
+      <td>${escapeHtml(groups.join(", ") || "Not specified")}</td>
+      <td>${escapeHtml(room.invigilators.map((item) => item.fullName).join(", ") || "Not listed")}</td>
+      <td>${room.allocatedStudents}</td>
+    </tr>`;
+  }).join("");
+
+  return `<!doctype html>
+    <html><head><meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body { font-family: Arial, sans-serif; color: #172033; padding: 28px; }
+      h1 { margin-bottom: 4px; font-size: 22px; }
+      p { margin-top: 0; color: #526174; font-size: 12px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 22px; }
+      th, td { padding: 9px 7px; border: 1px solid #d5deea; text-align: left; font-size: 10px; }
+      th { background: #edf3fa; }
+    </style></head>
+    <body>
+      <h1>Invigilation assignments</h1>
+      <p>SeatWise · ${mode} arrangement · ${rooms.length} assigned room${rooms.length === 1 ? "" : "s"}</p>
+      <p>Faculty: ${escapeHtml(fullName)}${employeeId ? ` · ${escapeHtml(employeeId)}` : ""}</p>
+      <table>
+        <thead><tr><th>Building</th><th>Room</th><th>${mode === "section" ? "Course / section" : "Course"}</th><th>Invigilators</th><th>Students</th></tr></thead>
+        <tbody>${roomRows}</tbody>
+      </table>
+    </body></html>`;
+}
+
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   content: { paddingHorizontal: 18, paddingTop: 16, paddingBottom: 34 },
   centerState: { flex: 1, justifyContent: "center", alignItems: "center", padding: 28, gap: 12 },
   topLine: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
+  modeLabel: { color: COLORS.blue, fontSize: 9, fontWeight: "900", letterSpacing: 0.9, marginBottom: 10 },
+  pdfButton: { minHeight: 44, alignItems: "center", justifyContent: "center", paddingHorizontal: 13, marginBottom: 12, borderRadius: 11, backgroundColor: COLORS.mint },
+  pdfButtonText: { color: COLORS.background, fontSize: 11, fontWeight: "900" },
+  buttonPressed: { opacity: 0.75 },
+  buttonDisabled: { opacity: 0.6 },
   kicker: { color: COLORS.mint, fontSize: 9, fontWeight: "900", letterSpacing: 1.5 },
   title: { color: COLORS.text, fontSize: 27, fontWeight: "900", marginTop: 5, letterSpacing: -0.5 },
   countPill: { backgroundColor: "#193449", borderWidth: 1, borderColor: "#28556A", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 7 },

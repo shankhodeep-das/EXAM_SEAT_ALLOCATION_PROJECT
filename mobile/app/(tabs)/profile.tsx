@@ -2,16 +2,18 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "../context/AuthContext";
-import { StaffDashboard, StudentDashboard } from "../services/api";
+import { StaffDashboard, StudentDashboard, updatePassword } from "../services/api";
 
 const COLORS = {
   background: "#0B1423",
@@ -22,12 +24,19 @@ const COLORS = {
   muted: "#9EACC0",
   mint: "#4DE1C1",
   red: "#FF8585",
+  green: "#8FE0B2",
 };
 
 export default function ProfileScreen() {
-  const { user, dashboard, signOut } = useAuth();
+  const { token, user, dashboard, signOut } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState("");
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   if (!user) {
     return (
@@ -66,6 +75,45 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleUpdatePassword = async () => {
+    setPasswordError("");
+    setPasswordMessage("");
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Enter your current password and complete both new-password fields.");
+      return;
+    }
+    if (newPassword.length < 8 || newPassword.length > 72) {
+      setPasswordError("Your new password must be between 8 and 72 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("The new password and confirmation do not match.");
+      return;
+    }
+    if (!token) {
+      setPasswordError("Your session has expired. Please sign in again.");
+      return;
+    }
+
+    setPasswordBusy(true);
+    try {
+      const result = await updatePassword(token, user.roleGroup, currentPassword, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordMessage(result.message);
+      Alert.alert("Password updated", result.message);
+    } catch (passwordUpdateError) {
+      setPasswordError(
+        passwordUpdateError instanceof Error
+          ? passwordUpdateError.message
+          : "Unable to update your password. Please try again."
+      );
+    } finally {
+      setPasswordBusy(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
@@ -95,6 +143,41 @@ export default function ProfileScreen() {
           ))}
         </View>
 
+        <View style={styles.passwordCard}>
+          <Text style={styles.sectionTitle}>UPDATE PASSWORD</Text>
+          <Text style={styles.passwordIntro}>Use your current password to set a new secure password for this account.</Text>
+          <PasswordField
+            label="Current password"
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            autoComplete="current-password"
+          />
+          <PasswordField
+            label="New password"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            autoComplete="new-password"
+          />
+          <PasswordField
+            label="Confirm new password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            autoComplete="new-password"
+          />
+          {!!passwordError && <Text accessibilityRole="alert" style={styles.error}>{passwordError}</Text>}
+          {!!passwordMessage && <Text accessibilityRole="status" style={styles.success}>{passwordMessage}</Text>}
+          <Pressable
+            accessibilityRole="button"
+            disabled={passwordBusy}
+            onPress={handleUpdatePassword}
+            style={({ pressed }) => [styles.passwordButton, pressed && styles.pressed, passwordBusy && styles.disabled]}
+          >
+            {passwordBusy
+              ? <ActivityIndicator color={COLORS.background} />
+              : <Text style={styles.passwordButtonText}>Update password</Text>}
+          </Pressable>
+        </View>
+
         {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
 
         <Pressable
@@ -111,6 +194,33 @@ export default function ProfileScreen() {
         <Text style={styles.footer}>SEATWISE  •  EXAM SEATING, MADE CLEAR</Text>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function PasswordField({
+  label,
+  value,
+  onChangeText,
+  autoComplete,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  autoComplete: "current-password" | "new-password";
+}) {
+  return (
+    <View style={styles.passwordField}>
+      <Text style={styles.passwordLabel}>{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        secureTextEntry
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete={autoComplete}
+        style={styles.passwordInput}
+      />
+    </View>
   );
 }
 
@@ -156,6 +266,15 @@ const styles = StyleSheet.create({
   detailValue: { color: COLORS.text, fontSize: 13, lineHeight: 19, fontWeight: "700" },
   muted: { color: COLORS.muted, fontSize: 13, textAlign: "center", marginTop: 8 },
   error: { color: COLORS.red, fontSize: 12, marginTop: 14, textAlign: "center" },
+  success: { color: COLORS.green, fontSize: 12, marginTop: 14, textAlign: "center", fontWeight: "700" },
+  passwordCard: { padding: 17, marginTop: 14, borderRadius: 18, backgroundColor: COLORS.panel, borderWidth: 1, borderColor: COLORS.border },
+  passwordIntro: { color: COLORS.muted, fontSize: 11, lineHeight: 17, marginTop: 3, marginBottom: 8 },
+  passwordField: { marginTop: 10 },
+  passwordLabel: { color: COLORS.muted, fontSize: 10, fontWeight: "700", marginBottom: 6 },
+  passwordInput: { minHeight: 44, paddingHorizontal: 12, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, color: COLORS.text, backgroundColor: "#0D1929", fontSize: 12 },
+  passwordButton: { minHeight: 47, justifyContent: "center", alignItems: "center", marginTop: 15, borderRadius: 12, backgroundColor: COLORS.mint },
+  passwordButtonText: { color: COLORS.background, fontSize: 12, fontWeight: "900" },
+  disabled: { opacity: 0.6 },
   signOutButton: { minHeight: 49, justifyContent: "center", alignItems: "center", marginTop: 18, borderRadius: 13, borderWidth: 1, borderColor: "#693B48", backgroundColor: "#351F2B" },
   signOutText: { color: COLORS.red, fontSize: 13, fontWeight: "800" },
   pressed: { opacity: 0.75 },

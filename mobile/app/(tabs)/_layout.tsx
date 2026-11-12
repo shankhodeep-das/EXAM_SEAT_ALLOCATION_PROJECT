@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 import { useAuth } from "../context/AuthContext";
 
 export default function TabLayout() {
-  const { token, initializing } = useAuth();
+  const { token, user, initializing } = useAuth();
 
   return (
     <Tabs
@@ -36,6 +36,14 @@ export default function TabLayout() {
         options={{
           title: "Exam room",
           tabBarLabel: "Exam room",
+        }}
+      />
+      <Tabs.Screen
+        name="manage"
+        options={{
+          title: "Tools",
+          tabBarLabel: "Tools",
+          href: user && user.roleGroup === "STUDENT" ? null : undefined,
         }}
       />
       <Tabs.Screen

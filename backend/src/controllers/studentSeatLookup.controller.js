@@ -1,7 +1,9 @@
-const fs = require("fs/promises");
-const path = require("path");
 const prisma = require("../config/prisma");
 const { parseAllocationRooms } = require("../utils/seatAllocationReport");
+const {
+  getStudentAllocationMode,
+  readAllocationReport,
+} = require("../utils/studentAllocationMode");
 
 function canSearchStudentSeats(user) {
   return user?.roleGroup === "ADMIN" ||
@@ -49,8 +51,8 @@ exports.getStudentSeatDetails = async (req, res) => {
       return res.status(404).json({ message: "No student found with that roll number" });
     }
 
-    const reportPath = path.join(__dirname, "..", "scripts", "seat-allocation.txt");
-    const report = await fs.readFile(reportPath, "utf8");
+    const allocationMode = await getStudentAllocationMode(prisma);
+    const { report } = await readAllocationReport(allocationMode);
     const assignedRoom = parseAllocationRooms(report).find((room) =>
       room.rows.some((row) =>
         row.some((seat) => seat.rollNo === rollNo)
@@ -59,6 +61,7 @@ exports.getStudentSeatDetails = async (req, res) => {
 
     if (!assignedRoom) {
       return res.status(200).json({
+        allocationMode,
         student: {
           rollNo: student.rollNo,
           fullName: student.fullName,
@@ -82,6 +85,7 @@ exports.getStudentSeatDetails = async (req, res) => {
     const seats = assignedRoom.rows.flat();
 
     return res.status(200).json({
+      allocationMode,
       student: {
         rollNo: student.rollNo,
         fullName: student.fullName,
@@ -121,6 +125,10 @@ exports.getStudentSeatDetails = async (req, res) => {
       },
     });
   } catch (error) {
+    if (error.code === "ALLOCATION_REPORT_UNAVAILABLE") {
+      return res.status(503).json({ message: error.message });
+    }
+
     console.error("Student seat lookup error:", error);
     return res.status(500).json({
       message: "Unable to load student seating details",

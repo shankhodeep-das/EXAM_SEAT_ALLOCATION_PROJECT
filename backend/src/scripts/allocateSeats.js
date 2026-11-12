@@ -406,8 +406,12 @@ async function runSeatingAllocation(
         : examId === undefined
             ? "SEAT ALLOCATION - All rooms"
             : `EXAM SEAT ALLOCATION - Exam ID: ${examId}`;
+    const groupLimitLabel = groupBy === "section"
+        ? "Maximum sections per room"
+        : "Maximum courses per room";
     const reportLines = [
         reportHeader,
+        `${groupLimitLabel}: ${maxCoursesPerRoom}`,
         "Temporary report; allocations have not been saved to the database.",
         examId === undefined
             ? "Special seats are derived from students marked as requiring them."

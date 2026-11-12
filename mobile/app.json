@@ -2,7 +2,7 @@
   "expo": {
     "name": "SeatWise",
     "slug": "seatwise",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "seatwise",
@@ -40,7 +40,8 @@
       ],
       "expo-secure-store",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true

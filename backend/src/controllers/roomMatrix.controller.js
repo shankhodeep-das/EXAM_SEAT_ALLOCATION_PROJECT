@@ -112,12 +112,37 @@ async function runAllocation(req, res, config) {
       });
     }
 
-    const summary = stdout
+    const reportPath = path.join(__dirname, "..", "scripts", config.reportFile);
+    let generatedReport;
+    try {
+      generatedReport = await fs.readFile(reportPath, "utf8");
+    } catch (error) {
+      console.error(`Unable to verify ${config.reportFile} after allocation:`, error);
+      return res.status(500).json({
+        message: `Allocation exited successfully, but ${config.reportFile} could not be read from this backend.`,
+      });
+    }
+
+    const appliedLimit = `${config.reportLimitLabel}: ${allocationLimit}`;
+    if (!generatedReport.split(/\r?\n/).includes(appliedLimit)) {
+      console.error(
+        `${config.reportFile} does not contain the requested allocation limit: ${appliedLimit}`
+      );
+      return res.status(500).json({
+        message: `${config.reportFile} does not confirm the requested limit. Restart the backend and try again.`,
+      });
+    }
+
+    const summary = [
+      appliedLimit,
+      ...stdout
       .split(/\r?\n/)
-      .filter((line) => /^(Total Rooms Used|Total Students Allocated|Students Not Allocated):/.test(line));
+      .filter((line) => /^(Total Rooms Used|Total Students Allocated|Students Not Allocated):/.test(line)),
+    ];
 
     return res.status(200).json({
       message: `${config.label} allocation completed successfully. ${config.reportFile} has been updated.`,
+      reportFile: config.reportFile,
       [config.responseField]: allocationLimit,
       summary,
     });
@@ -227,6 +252,7 @@ exports.runRoomAllocation = (req, res) => runAllocation(req, res, {
   argumentName: "--max-courses",
   scriptName: "allocateSeats.js",
   limitLabel: "Courses",
+  reportLimitLabel: "Maximum courses per room",
   label: "Seat",
   reportFile: "seat-allocation.txt",
   responseField: "maxCoursesPerRoom",
@@ -237,6 +263,7 @@ exports.runSectionAllocation = (req, res) => runAllocation(req, res, {
   argumentName: "--max-sections",
   scriptName: "allocatedSeatsCT.js",
   limitLabel: "Sections",
+  reportLimitLabel: "Maximum sections per room",
   label: "Section",
   reportFile: "seat-allocation-CT.txt",
   responseField: "maxSectionsPerRoom",
