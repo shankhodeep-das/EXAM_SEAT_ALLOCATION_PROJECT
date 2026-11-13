@@ -251,7 +251,7 @@ export function Footer() {
           <span>{siteConfig.appName}</span>
         </a>
         <p>
-          © {siteConfig.year} <a href="https://www.brainwareuniversity.ac.in/" target="_blank">{siteConfig.institution}</a>. All rights reserved.
+          © {siteConfig.year}. All rights reserved.
         </p>
         <a href={`mailto:${siteConfig.contactEmail}`}>
           {siteConfig.contactEmail}
